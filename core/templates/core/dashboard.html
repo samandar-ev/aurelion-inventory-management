@@ -1,207 +1,169 @@
 {% extends 'core/base.html' %}
 {% load number_filters tz %}
 
-{% block title %}Dashboard - AURELION{% endblock %}
+{% block title %}Dashboard - Aurelion{% endblock %}
 
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header d-flex justify-content-between align-items-end">
     <div>
-        <h2 class="mb-1">Dashboard</h2>
-        <p class="text-muted text-sm mb-0">Welcome back, {{ user.username }}</p>
+        <h1 class="h2">Dashboard</h1>
+        <p class="text-muted mb-0">{% now "l, j F Y" %}</p>
     </div>
-    {% if user.is_cashier and not user.is_owner %}
-    <a href="{% url 'pos' %}" class="btn btn-primary">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M12 5v14M5 12h14"/>
-        </svg>
-        New Sale
+</div>
+
+<section class="kpi-grid" aria-label="Today at a glance">
+    <div class="kpi">
+        <p class="kpi-label">Net sales today</p>
+        <p class="kpi-value">{{ net_sales|format_currency }}</p>
+        <p class="kpi-meta">Gross {{ gross_sales|format_currency }}, refunds <span {% if refund_amount %}class="neg"{% endif %}>{{ refund_amount|format_currency }}</span></p>
+    </div>
+    <div class="kpi">
+        <p class="kpi-label">Orders</p>
+        <p class="kpi-value">{{ today_count|format_number }}</p>
+        <p class="kpi-meta">Completed sales today</p>
+    </div>
+    <div class="kpi">
+        <p class="kpi-label">Items sold</p>
+        <p class="kpi-value">{{ items_sold|format_number }}</p>
+        <p class="kpi-meta">Across all orders today</p>
+    </div>
+    <a class="kpi{% if low_stock_count %} is-alert{% endif %}" href="{% url 'product_list' %}?sort=stock_asc">
+        <p class="kpi-label">Low stock</p>
+        <p class="kpi-value">{{ low_stock_count|format_number }}</p>
+        <p class="kpi-meta">{% if low_stock_count %}At or below their minimum{% else %}Every variant is above its minimum{% endif %}</p>
     </a>
+</section>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <section class="card h-100">
+            <div class="card-header">
+                <h2 class="section-title">Sales today</h2>
+                <span class="text-xs text-muted fw-normal">Running total by hour</span>
+            </div>
+            <div class="card-body">
+                {% if today_count %}
+                <div class="chart-box"><canvas id="salesCurve" role="img" aria-label="Running sales total through the day, reaching {{ net_sales|format_currency }}"></canvas></div>
+                {% else %}
+                <div class="empty-state">
+                    <p class="empty-state-title">No sales yet today</p>
+                    <p class="empty-state-text">The chart starts with the first completed sale.</p>
+                    {% if user.is_cashier and not user.is_owner %}<a href="{% url 'pos' %}" class="btn btn-primary btn-sm mt-3">Open point of sale</a>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <section class="card h-100">
+            <div class="card-header">
+                <h2 class="section-title">Top products</h2>
+                <span class="text-xs text-muted fw-normal">By revenue today</span>
+            </div>
+            <div class="card-body">
+                {% if top_products %}
+                <ol class="rank">
+                    {% for p in top_products %}
+                    <li>
+                        <span class="rank-brand">{{ p.variant__product__brand }}</span>
+                        <a class="rank-name" href="{% url 'product_detail' p.variant__product__id %}">{{ p.variant__product__name }}</a>
+                        <span class="rank-value">{{ p.total_sales|format_currency }}</span>
+                        <span class="rank-bar" aria-hidden="true"><span style="width: {{ p.share }}%"></span></span>
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <div class="empty-state px-0">
+                    <p class="empty-state-title">Nothing sold yet</p>
+                    <p class="empty-state-text">Best sellers by revenue appear here during the day.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="{% if active_promotions %}col-lg-6{% else %}col-12{% endif %}">
+        <section class="card h-100">
+            <div class="card-header">
+                <h2 class="section-title">Low stock</h2>
+                {% if low_stock_count > 5 %}
+                <a href="{% url 'product_list' %}?sort=stock_asc" class="btn btn-sm btn-ghost">View all {{ low_stock_count }}</a>
+                {% endif %}
+            </div>
+            {% if low_stock %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Product</th><th class="d-none d-md-table-cell">Variant</th><th class="text-end">In stock</th></tr></thead>
+                    <tbody>
+                        {% for v in low_stock %}
+                        <tr onclick="window.location='{% url 'product_detail' v.product.pk %}';">
+                            <td>
+                                <span class="d-block text-xs text-muted">{{ v.product.brand }}</span>
+                                <a href="{% url 'product_detail' v.product.pk %}" class="fw-medium">{{ v.product.name }}</a>
+                            </td>
+                            <td class="text-muted d-none d-md-table-cell">{{ v.color|default:"-" }}, {{ v.size|default:"-" }}</td>
+                            <td class="text-end">
+                                {% if v.initial_quantity %}{{ v.initial_quantity }}{% else %}<span class="badge bg-danger">Sold out</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <div class="empty-state px-0">
+                    <p class="empty-state-title">Stock is healthy</p>
+                    <p class="empty-state-text">Variants at or below their minimum stock level show here.</p>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+
+    {% if active_promotions %}
+    <div class="col-lg-6">
+        <section class="card h-100">
+            <div class="card-header">
+                <h2 class="section-title">Active campaigns</h2>
+                {% if user.is_owner %}<a href="{% url 'promotion_list' %}" class="btn btn-sm btn-ghost">Manage</a>{% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Campaign</th><th>Offer</th><th class="d-none d-md-table-cell">Code</th><th class="text-end">Ends</th></tr></thead>
+                    <tbody>
+                        {% for promo in active_promotions %}
+                        <tr>
+                            <td class="fw-medium">{{ promo.name }}</td>
+                            <td>
+                                {% if promo.promo_type == 'PERCENTAGE' %}{{ promo.discount_value|floatformat }}% off
+                                {% elif promo.promo_type == 'FIXED' %}{{ promo.discount_value|format_currency }} off
+                                {% elif promo.promo_type == 'BOGO' %}Buy {{ promo.buy_quantity }}, get {{ promo.get_quantity }}
+                                {% elif promo.promo_type == 'TIERED' %}Tier pricing
+                                {% else %}Promotion{% endif %}
+                            </td>
+                            <td class="d-none d-md-table-cell">{% if promo.code %}<code class="promo-code">{{ promo.code }}</code>{% else %}<span class="text-muted">Automatic</span>{% endif %}</td>
+                            <td class="text-end text-muted text-nowrap">{{ promo.end_date|date:"M j" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
     {% endif %}
 </div>
 
-
-<div class="row g-3 mb-4">
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body stat-card stat-primary">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-label mb-2">Today's Net Sales</p>
-                        <p class="stat-value text-brand mb-0">{{ net_sales|format_currency }}</p>
-                    </div>
-                    <div class="icon-circle icon-gold">💰</div>
-                </div>
-                <div class="divider"></div>
-                <div class="d-flex justify-content-between text-sm">
-                    <div>
-                        <span class="text-muted">Gross</span>
-                        <p class="mb-0 fw-medium">{{ gross_sales|format_currency }}</p>
-                    </div>
-                    <div class="text-center">
-                        <span class="text-muted">Refunds</span>
-                        <p class="mb-0 fw-medium text-danger">-{{ refund_amount|format_currency }}</p>
-                    </div>
-                    <div class="text-end">
-                        <span class="text-muted">Orders</span>
-                        <p class="mb-0 fw-medium">{{ today_count|format_number }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body stat-card stat-success">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                        <p class="stat-label mb-1">Top Products Today</p>
-                        <p class="text-muted text-sm mb-0">{{ items_sold }} items sold</p>
-                    </div>
-                    <div class="icon-circle icon-green">📦</div>
-                </div>
-                {% if top_products %}
-                <div class="mt-2">
-                    {% for p in top_products %}
-                    <div class="list-item py-2">
-                        <div style="max-width: 70%;">
-                            <p class="text-xs text-muted mb-0">{{ p.variant__product__brand }}</p>
-                            <p class="text-sm fw-medium mb-0 text-truncate">{{ p.variant__product__name }}</p>
-                        </div>
-                        <span class="badge bg-success">{{ p.total_qty }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state py-4">
-                    <p class="text-muted text-sm mb-0">No sales yet today</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body stat-card stat-danger">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                        <p class="stat-label mb-1">Low Stock Alerts</p>
-                        {% if low_stock_count > 5 %}
-                        <p class="text-muted text-sm mb-0">Showing 5 of {{ low_stock_count }}</p>
-                        {% elif low_stock_count > 0 %}
-                        <p class="text-muted text-sm mb-0">{{ low_stock_count }} item{{ low_stock_count|pluralize }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="icon-circle icon-red">⚠️</div>
-                </div>
-                {% if low_stock %}
-                <div class="mt-2">
-                    {% for v in low_stock %}
-                    <div class="list-item py-2">
-                        <div style="max-width: 70%;">
-                            <p class="text-xs text-muted mb-0">{{ v.product.brand }}</p>
-                            <p class="text-sm fw-medium mb-0 text-truncate">
-                                {{ v.product.name }}
-                                <span class="text-muted fw-normal">({{ v.color|default:"-" }}/{{ v.size|default:"-" }})</span>
-                            </p>
-                        </div>
-                        <span class="badge bg-danger">{{ v.initial_quantity }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state py-4">
-                    <span style="font-size: 1.5rem;">✅</span>
-                    <p class="text-muted text-sm mb-0 mt-2">All stock levels healthy</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-
-{% if active_promotions %}
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>
-            <span class="me-2">🎁</span>Active Campaigns
-        </span>
-        {% if active_promotions|length > 3 %}
-        <button class="btn btn-sm btn-ghost" type="button" id="promoExpandBtn">
-            <span class="expand-text">+{{ active_promotions|length|add:"-3" }} more</span>
-            <span class="collapse-text d-none">Show less</span>
-        </button>
-        {% endif %}
-    </div>
-    <div class="card-body pt-2">
-        <div class="row g-3">
-            {% for promo in active_promotions %}
-            <div class="col-md-4 promo-card {% if forloop.counter > 3 %}promo-hidden d-none{% endif %}">
-                <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem; height: 100%; background: var(--bg-tertiary);">
-                    
-                    <div style="display: inline-block; background: var(--brand-gold); color: white; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 4px; margin-bottom: 0.625rem;">
-                        {% if promo.promo_type == 'PERCENTAGE' %}{{ promo.discount_value }}% OFF
-                        {% elif promo.promo_type == 'FIXED' %}${{ promo.discount_value }} OFF
-                        {% elif promo.promo_type == 'BOGO' %}BOGO
-                        {% elif promo.promo_type == 'TIERED' %}VIP
-                        {% else %}PROMO{% endif %}
-                    </div>
-                    
-                    
-                    <p class="fw-medium text-sm mb-2" style="color: var(--text-primary);">{{ promo.name }}</p>
-                    
-                    
-                    {% if promo.code %}
-                    <div style="display: inline-flex; align-items: center; gap: 0.375rem; background: var(--bg-secondary); border: 1px dashed var(--border-medium); border-radius: 4px; padding: 0.25rem 0.5rem; margin-bottom: 0.5rem;">
-                        <span class="text-xs text-muted">Code:</span>
-                        <code class="text-xs fw-semibold" style="color: var(--brand-gold);">{{ promo.code }}</code>
-                    </div>
-                    {% else %}
-                    <p class="text-xs mb-2" style="color: var(--success);">✓ Auto-applied</p>
-                    {% endif %}
-                    
-                    
-                    <div class="d-flex justify-content-between text-xs text-muted pt-2 mt-auto" style="border-top: 1px solid var(--border-light);">
-                        <span>{{ promo.get_applies_to_display }}</span>
-                        <span>Ends {{ promo.end_date|date:"M d" }}</span>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-{% if active_promotions|length > 3 %}
-<script>
-    (function() {
-        const btn = document.getElementById('promoExpandBtn');
-        const hiddenCards = document.querySelectorAll('.promo-hidden');
-        let expanded = false;
-        btn.addEventListener('click', function() {
-            expanded = !expanded;
-            hiddenCards.forEach(card => card.classList.toggle('d-none', !expanded));
-            btn.querySelector('.expand-text').classList.toggle('d-none', expanded);
-            btn.querySelector('.collapse-text').classList.toggle('d-none', !expanded);
-        });
-    })();
-</script>
-{% endif %}
-{% endif %}
-
-
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Recent Orders</span>
-        <form method="get" class="d-flex gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" 
-                   placeholder="Search order ID..." value="{{ request.GET.search }}" style="width: 160px;">
-            <button type="submit" class="btn btn-sm btn-secondary">Search</button>
+<section class="card">
+    <div class="card-header">
+        <h2 class="section-title">Recent orders</h2>
+        <form method="get" class="d-flex gap-2" role="search">
+            <input type="search" name="search" class="form-control form-control-sm"
+                   placeholder="Find an order number" aria-label="Find an order number" value="{{ request.GET.search }}" style="width: min(220px, 50vw);">
             {% if request.GET.search %}
             <a href="{% url 'dashboard' %}" class="btn btn-sm btn-ghost">Clear</a>
             {% endif %}
@@ -212,60 +174,40 @@
             <thead>
                 <tr>
                     <th>Order</th>
-                    <th>Date & Time</th>
+                    <th class="d-none d-md-table-cell">Date</th>
                     <th>Client</th>
+                    <th class="d-none d-md-table-cell">Status</th>
                     <th class="text-end">Amount</th>
-                    <th class="text-center">Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% if recent_orders %}
-                {% for order in recent_orders %}
-                <tr style="cursor: pointer;" onclick="window.location='{% url 'order_detail' order.id %}';">
-                    <td>
-                        <span class="fw-semibold">#{{ order.order_code|default:order.id }}</span>
-                        {% if order.type == 'EXCHANGE' %}
-                        <span class="badge bg-info ms-1">Exchange</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <span>{{ order.created_at|localtime|date:"M d, Y" }}</span>
-                        <span class="text-muted ms-1">{{ order.created_at|localtime|time:"H:i" }}</span>
-                    </td>
+                {% for order in recent_orders|slice:":10" %}
+                <tr onclick="window.location='{% url 'order_detail' order.id %}';">
+                    <td><a href="{% url 'order_detail' order.id %}" class="order-code">#{{ order.order_code|default:order.id }}</a></td>
+                    <td class="d-none d-md-table-cell">{{ order.created_at|localtime|date:"M j" }}<span class="text-muted ms-2">{{ order.created_at|localtime|time:"H:i" }}</span></td>
                     <td>{{ order.client|default:"Walk-in" }}</td>
-                    <td class="text-end">
-                        <span class="{% if order.type == 'RETURN' %}text-danger{% else %}fw-medium{% endif %}">
-                            {{ order.total_amount|format_currency }}
-                        </span>
+                    <td class="d-none d-md-table-cell">
+                        {% if order.status == 'FULLY_RETURNED' %}<span class="badge bg-secondary">Returned</span>
+                        {% elif order.status == 'PARTIALLY_RETURNED' %}<span class="badge bg-warning">Partly returned</span>
+                        {% elif order.type == 'EXCHANGE' %}<span class="badge bg-info">Exchange</span>
+                        {% elif order.status == 'COMPLETED' %}<span class="badge bg-success">Completed</span>
+                        {% elif order.status == 'REFUNDED' %}<span class="badge bg-danger">Refunded</span>
+                        {% else %}<span class="badge bg-secondary">{{ order.get_status_display }}</span>{% endif %}
                     </td>
-                    <td class="text-center">
-                        {% if order.status == 'FULLY_RETURNED' %}
-                        <span class="badge bg-secondary">Returned</span>
-                        {% elif order.status == 'PARTIALLY_RETURNED' %}
-                        <span class="badge bg-warning">Partial</span>
-                        {% elif order.type == 'EXCHANGE' %}
-                        <span class="badge bg-info">Exchange</span>
-                        {% elif order.status == 'COMPLETED' %}
-                        <span class="badge bg-success">Completed</span>
-                        {% elif order.status == 'REFUNDED' %}
-                        <span class="badge bg-danger">Refunded</span>
-                        {% else %}
-                        <span class="badge bg-secondary">{{ order.get_status_display }}</span>
-                        {% endif %}
-                    </td>
+                    <td class="text-end fw-medium{% if order.type == 'RETURN' %} text-danger{% endif %}">{{ order.total_amount|format_currency }}</td>
                 </tr>
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center py-5">
+                    <td colspan="5">
                         <div class="empty-state">
-                            <p class="empty-state-icon">📋</p>
                             {% if request.GET.search %}
-                            <p class="empty-state-title">No results found</p>
-                            <p class="empty-state-text">No orders matching "{{ request.GET.search }}"</p>
+                            <p class="empty-state-title">No order matches “{{ request.GET.search }}”</p>
+                            <p class="empty-state-text">Check the code on the receipt, or clear the search.</p>
                             {% else %}
                             <p class="empty-state-title">No orders yet</p>
-                            <p class="empty-state-text">Start selling to see orders here</p>
+                            <p class="empty-state-text">Completed sales appear here as soon as they're rung up.</p>
                             {% endif %}
                         </div>
                     </td>
@@ -274,10 +216,69 @@
             </tbody>
         </table>
     </div>
-    {% if recent_orders %}
-    <div class="card-footer text-center">
-        <a href="{% url 'order_list' %}" class="btn btn-sm btn-secondary">View All Orders</a>
+    {% if user.is_cashier and recent_orders %}
+    <div class="card-footer d-flex justify-content-end">
+        <a href="{% url 'order_list' %}" class="btn btn-sm btn-ghost">View all orders</a>
     </div>
     {% endif %}
-</div>
+</section>
+
+{{ sales_curve|json_script:"salesCurveData" }}
+{% endblock %}
+
+{% block extra_js %}
+{% if today_count %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    var data = JSON.parse(document.getElementById('salesCurveData').textContent);
+    var canvas = document.getElementById('salesCurve');
+    if (!canvas || !data.length) return;
+    var money = function (v) { return '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: data.map(function (d) { return d.h; }),
+            datasets: [{
+                data: data.map(function (d) { return d.v; }),
+                borderColor: '#1f4d3e',
+                backgroundColor: 'rgba(31, 77, 62, 0.08)',
+                borderWidth: 2,
+                fill: true,
+                stepped: 'before',
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHoverBackgroundColor: '#1f4d3e',
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: reduce ? false : { duration: 300 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1c1b19',
+                    padding: 10,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: { label: function (c) { return money(c.parsed.y) + ' so far'; } }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, border: { display: false },
+                     ticks: { color: '#625f58', font: { family: 'Inter', size: 12 }, maxTicksLimit: 8, maxRotation: 0 } },
+                y: { beginAtZero: true, border: { display: false }, grid: { color: '#efede8' },
+                     ticks: { color: '#625f58', font: { family: 'Inter', size: 12 }, maxTicksLimit: 5, callback: money } }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load number_filters %}
 
 {% block title %}Barcode Generator - AURELION{% endblock %}
 
@@ -6,7 +7,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Barcode Generator</h2>
+        <h1 class="h2 mb-1">Barcode generator</h1>
         <p class="text-muted text-sm mb-0">Select items to generate printable barcodes</p>
     </div>
 </div>
@@ -22,7 +23,7 @@
                     </svg>
                 </span>
                 <input type="text" name="q" class="form-control border-start-0" 
-                       placeholder="Search by product name, brand, or SKU..." 
+                       placeholder="Product, brand or SKU" 
                        value="{{ request.GET.q }}">
             </div>
             <button type="submit" class="btn btn-secondary">Search</button>
@@ -42,7 +43,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="selectAll">
-                    <label class="form-check-label text-sm" for="selectAll">Select All on Page</label>
+                    <label class="form-check-label text-sm" for="selectAll">Select all on this page</label>
                 </div>
                 <span class="text-muted text-sm" id="selectedCount">0 items selected</span>
             </div>
@@ -50,7 +51,7 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
                 </svg>
-                Generate Barcodes
+                Generate barcodes
             </button>
         </div>
     </div>
@@ -79,12 +80,9 @@
                         </td>
                         <td>
                             {% if variant.product.image %}
-                            <img src="{{ variant.product.image.url }}" alt="" 
-                                 style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px;">
+                            <img src="{{ variant.product.image.url }}" alt="" class="thumb" loading="lazy">
                             {% else %}
-                            <div style="width: 36px; height: 36px; background: var(--bg-tertiary); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                                <span class="text-muted text-xs">—</span>
-                            </div>
+                            <span class="thumb thumb-empty" aria-hidden="true"><i class="bi bi-image"></i></span>
                             {% endif %}
                         </td>
                         <td>
@@ -98,19 +96,18 @@
                             <code class="text-xs">{{ variant.sku }}</code>
                         </td>
                         <td class="text-end">
-                            <span class="text-sm">${{ variant.retail_price }}</span>
+                            <span class="text-sm">{{ variant.retail_price|format_currency }}</span>
                         </td>
                         <td class="text-center">
-                            <span class="badge {% if variant.initial_quantity < 5 %}bg-danger{% else %}bg-secondary{% endif %}">
-                                {{ variant.initial_quantity }}
-                            </span>
+                            {% if variant.initial_quantity == 0 %}<span class="badge bg-danger">Sold out</span>
+                            {% elif variant.initial_quantity < 5 %}<span class="badge bg-warning">{{ variant.initial_quantity }}</span>
+                            {% else %}<span class="qty">{{ variant.initial_quantity }}</span>{% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="7">
                             <div class="empty-state">
-                                <p class="empty-state-icon">📦</p>
                                 <p class="empty-state-title">No products found</p>
                                 <p class="empty-state-text">
                                     {% if request.GET.q %}
@@ -134,7 +131,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Barcode Generation Options</h5>
+                <h2 class="modal-title">Barcode generation options</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

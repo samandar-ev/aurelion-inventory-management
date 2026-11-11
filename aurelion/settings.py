@@ -5,22 +5,47 @@ from zoneinfo import ZoneInfo
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Set DJANGO_SECRET_KEY in any non-local environment.
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-dad6jf3#2ihwyc&!x@_=38^7@ago2(c1^t0wwda9_(ogewt6j0)')
-
 DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
+
+# The fallback key only exists so a fresh clone runs locally. Production
+# (DEBUG off) refuses to start without a real key.
+DEV_SECRET_KEY = 'django-insecure-local-development-only'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or DEV_SECRET_KEY
+if not DEBUG and SECRET_KEY == DEV_SECRET_KEY:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('Set DJANGO_SECRET_KEY when DJANGO_DEBUG is False.')
 
 ALLOWED_HOSTS_STR = os.getenv('DJANGO_ALLOWED_HOSTS', '')
 if ALLOWED_HOSTS_STR:
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',') if host.strip()]
 else:
-    ALLOWED_HOSTS = ['*']                                 
+    # Any host locally; only localhost in production until hosts are configured
+    ALLOWED_HOSTS = ['*'] if DEBUG else ['localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS_STR = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '')
 if CSRF_TRUSTED_ORIGINS_STR:
     CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS_STR.split(',') if origin.strip()]
 else:
     CSRF_TRUSTED_ORIGINS = []
+
+# Production cookie and header hardening (served over HTTPS behind the proxy)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_HSTS_SECONDS', '31536000'))
+    if os.getenv('DJANGO_SECURE_PROXY_SSL_HEADER', 'False').lower() == 'true':
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.SessionAuthentication'],
+}
 
 INSTALLED_APPS = [
     'django.contrib.admin',

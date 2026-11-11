@@ -6,14 +6,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Clients</h2>
+        <h1 class="h2 mb-1">Clients</h1>
         <p class="text-muted text-sm mb-0">Manage your client base</p>
     </div>
     <a href="{% url 'client_create' %}" class="btn btn-primary">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1">
             <path d="M12 5v14M5 12h14"/>
         </svg>
-        Add Client
+        Add client
     </a>
 </div>
 
@@ -22,7 +22,7 @@
     <div class="card-body py-3">
         <form method="get" class="d-flex gap-2">
             <input type="text" name="q" class="form-control" 
-                   placeholder="Search by name, phone, or last 4 digits..." 
+                   placeholder="Name, phone or last 4 digits" 
                    value="{{ search_query }}" style="max-width: 400px;">
             <button type="submit" class="btn btn-secondary">Search</button>
             {% if search_query %}
@@ -61,9 +61,9 @@
                     <td class="text-muted">{{ client.email|default:"—" }}</td>
                     <td>
                         {% if client.dynamic_tier_label == 'Platinum' %}
-                        <span class="badge bg-primary">Platinum</span>
+                        <span class="badge bg-dark">Platinum</span>
                         {% elif client.dynamic_tier_label == 'Gold' %}
-                        <span class="badge" style="background: rgba(184,150,92,0.15); color: #8B7142;">Gold</span>
+                        <span class="badge bg-primary">Gold</span>
                         {% elif client.dynamic_tier_label == 'Silver' %}
                         <span class="badge bg-secondary">Silver</span>
                         {% else %}
@@ -75,7 +75,6 @@
                 <tr>
                     <td colspan="4">
                         <div class="empty-state">
-                            <p class="empty-state-icon">👥</p>
                             <p class="empty-state-title">No clients found</p>
                             <p class="empty-state-text">
                                 {% if search_query %}

@@ -7,7 +7,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Orders</h2>
+        <h1 class="h2 mb-1">Orders</h1>
         <p class="text-muted text-sm mb-0">Complete order history</p>
     </div>
     {% if user.is_cashier and not user.is_owner %}
@@ -15,7 +15,7 @@
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1">
             <path d="M12 5v14M5 12h14"/>
         </svg>
-        New Sale
+        New sale
     </a>
     {% endif %}
 </div>
@@ -52,7 +52,7 @@
                     <td>{{ order.client|default:"Walk-in" }}</td>
                     <td class="text-end">
                         <span class="{% if order.type == 'RETURN' %}text-danger{% else %}fw-medium{% endif %}">
-                            ${{ order.total_amount }}
+                            {{ order.total_amount|format_currency }}
                         </span>
                     </td>
                     <td class="text-center">
@@ -76,7 +76,6 @@
                 <tr>
                     <td colspan="5">
                         <div class="empty-state">
-                            <p class="empty-state-icon">📋</p>
                             <p class="empty-state-title">No orders yet</p>
                             <p class="empty-state-text">Orders will appear here once you make a sale</p>
                         </div>
@@ -94,7 +93,7 @@
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
         <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Prev</a>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
         </li>
         {% endif %}
 

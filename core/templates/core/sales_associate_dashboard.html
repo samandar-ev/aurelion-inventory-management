@@ -1,132 +1,130 @@
 {% extends 'core/base.html' %}
-{% load static %}
+
+{% block title %}Stock lookup - Aurelion{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-0">
-    <div class="row g-0">
-        <div class="col-12">
-            <div class="card border-0 rounded-0 shadow-sm mb-3">
-                <div class="card-body p-3">
-                    <h5 class="card-title mb-3">Stock Lookup</h5>
-
-                    
-                    <form method="get" class="mb-3">
-                        <div class="input-group">
-                            <input type="text" name="q" class="form-control form-control-lg"
-                                placeholder="Scan or type SKU/Name" value="{{ query|default:'' }}" id="searchInput"
-                                autofocus>
-                            <button class="btn btn-dark" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button" id="scanButton">
-                                <i class="bi bi-upc-scan"></i>
-                            </button>
-                        </div>
-                    </form>
-
-                    
-                    <div id="scanner-container" class="mb-3 d-none">
-                        <div id="reader" style="width: 100%;"></div>
-                        <button class="btn btn-danger w-100 mt-2" id="stopScanButton">Stop Scanning</button>
-                    </div>
-
-                    
-                    {% if products %}
-                    <div class="list-group list-group-flush">
-                        {% for product in products %}
-                        <div class="list-group-item px-0 py-3">
-                            <div class="d-flex align-items-center">
-                                {% if product.image %}
-                                <img src="{{ product.image.url }}" class="rounded me-3"
-                                    style="width: 60px; height: 60px; object-fit: cover;">
-                                {% else %}
-                                <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center"
-                                    style="width: 60px; height: 60px;">
-                                    <i class="bi bi-image text-muted"></i>
-                                </div>
-                                {% endif %}
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ product.name }}</h6>
-                                    <small class="text-muted d-block">{{ product.base_sku }}</small>
-                                    <small class="text-muted">{{ product.brand }}</small>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge bg-dark rounded-pill">{{ product.total_quantity }} in
-                                        stock</span>
-                                </div>
-                            </div>
-
-                            
-                            <div class="mt-2 ps-2 border-start border-2">
-                                {% for variant in product.variants.all %}
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <small>{{ variant.color }} / {{ variant.size }}</small>
-                                    <span
-                                        class="badge {% if variant.current_stock > 0 %}bg-success{% else %}bg-danger{% endif %}">
-                                        {{ variant.current_stock }}
-                                    </span>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% elif query %}
-                    <div class="alert alert-warning">No products found for "{{ query }}".</div>
-                    {% endif %}
-                </div>
-            </div>
-
-            
-            <div class="d-grid gap-2 p-3">
-                <a href="{% url 'client_list' %}" class="btn btn-outline-dark btn-lg">
-                    <i class="bi bi-people me-2"></i> Client List
-                </a>
-            </div>
-        </div>
-    </div>
+<div class="page-header">
+    <h1>Stock lookup</h1>
+    <p class="text-muted mb-0">Find a piece by SKU or name, or scan its tag</p>
 </div>
 
+<section class="card mb-3">
+    <div class="card-body">
+        <form method="get" id="lookupForm" role="search">
+            <div class="d-flex gap-2">
+                <div class="input-group flex-grow-1">
+                    <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                    <input type="search" name="q" class="form-control" id="searchInput"
+                           placeholder="SKU, brand or product name" aria-label="Find a product by SKU or name"
+                           value="{{ query|default:'' }}" autocomplete="off" autofocus>
+                </div>
+                <button class="btn btn-primary" type="submit">Search</button>
+                <button class="btn btn-secondary" type="button" id="scanButton" aria-label="Scan a barcode with the camera">
+                    <i class="bi bi-upc-scan" aria-hidden="true"></i>
+                </button>
+            </div>
+        </form>
 
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+        <div id="scanner-container" class="mt-3 d-none">
+            <div id="reader" class="scanner-view"></div>
+            <p class="text-danger text-sm mt-2 mb-0 d-none" id="scanError" role="alert"></p>
+            <button class="btn btn-secondary w-100 mt-2" id="stopScanButton" type="button">Stop scanning</button>
+        </div>
+    </div>
+</section>
+
+<section class="card" aria-live="polite">
+    {% if products %}
+    <ul class="lookup-list">
+        {% for product in products %}
+        <li class="lookup-item">
+            <div class="lookup-head">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="" class="thumb" loading="lazy">
+                {% else %}
+                <span class="thumb thumb-empty" aria-hidden="true"><i class="bi bi-image"></i></span>
+                {% endif %}
+                <div class="lookup-name">
+                    <span class="d-block text-xs text-muted">{{ product.brand }}</span>
+                    <h2 class="section-title">{{ product.name }}</h2>
+                    <code>{{ product.base_sku }}</code>
+                </div>
+                <div class="lookup-stock">
+                    {% if product.total_quantity == 0 %}<span class="badge bg-danger">Sold out</span>
+                    {% elif product.total_quantity < 5 %}<span class="badge bg-warning">{{ product.total_quantity }} in stock</span>
+                    {% else %}<span class="qty">{{ product.total_quantity }} in stock</span>{% endif %}
+                </div>
+            </div>
+            <ul class="lookup-variants">
+                {% for variant in product.variants.all %}
+                <li>
+                    <span>{{ variant.color|default:"—" }}, {{ variant.size|default:"—" }}</span>
+                    {% if variant.initial_quantity == 0 %}<span class="badge bg-danger">Sold out</span>
+                    {% elif variant.initial_quantity < 5 %}<span class="badge bg-warning">{{ variant.initial_quantity }}</span>
+                    {% else %}<span class="qty">{{ variant.initial_quantity }}</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+    {% elif query %}
+    <div class="empty-state">
+        <p class="empty-state-title">No product matches “{{ query }}”</p>
+        <p class="empty-state-text">Check the SKU on the tag, or search by brand or product name.</p>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-state-title">Find a piece on the floor</p>
+        <p class="empty-state-text">Type a SKU or product name, or tap the barcode button to scan the tag with your camera.</p>
+    </div>
+    {% endif %}
+</section>
+
+<a href="{% url 'client_list' %}" class="btn btn-secondary btn-lg w-100 mt-3">
+    <i class="bi bi-people" aria-hidden="true"></i>Client list
+</a>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-    const html5QrCode = new Html5Qrcode("reader");
-    const scanButton = document.getElementById('scanButton');
-    const stopScanButton = document.getElementById('stopScanButton');
-    const scannerContainer = document.getElementById('scanner-container');
-    const searchInput = document.getElementById('searchInput');
+(function () {
+    var scanButton = document.getElementById('scanButton');
+    var stopScanButton = document.getElementById('stopScanButton');
+    var container = document.getElementById('scanner-container');
+    var searchInput = document.getElementById('searchInput');
+    var lookupForm = document.getElementById('lookupForm');
+    var scanError = document.getElementById('scanError');
+    var scanner = null;
 
-    scanButton.addEventListener('click', () => {
-        scannerContainer.classList.remove('d-none');
-        html5QrCode.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
-            },
-            (decodedText, decodedResult) => {
+    function showError(text) {
+        scanError.textContent = text;
+        scanError.classList.remove('d-none');
+    }
+
+    function stop() {
+        if (!scanner) { container.classList.add('d-none'); return Promise.resolve(); }
+        return scanner.stop().catch(function () {}).then(function () { container.classList.add('d-none'); });
+    }
+
+    scanButton.addEventListener('click', function () {
+        scanError.classList.add('d-none');
+        container.classList.remove('d-none');
+        if (typeof Html5Qrcode === 'undefined') { showError('The scanner could not load. Type the SKU instead.'); return; }
+        scanner = scanner || new Html5Qrcode('reader');
+        scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 250, height: 150 } },
+            function (decodedText) {
                 searchInput.value = decodedText;
-                html5QrCode.stop().then(() => {
-                    scannerContainer.classList.add('d-none');
-                    document.querySelector('form').submit();
-                }).catch((err) => {
-                    console.error("Failed to stop scanning", err);
-                });
+                stop().then(function () { lookupForm.submit(); });
             },
-            (errorMessage) => {
-                // parse error, ignore it.
-            })
-            .catch((err) => {
-                console.error(`Unable to start scanning, error: ${err}`);
-            });
-    });
-
-    stopScanButton.addEventListener('click', () => {
-        html5QrCode.stop().then(() => {
-            scannerContainer.classList.add('d-none');
-        }).catch((err) => {
-            console.error("Failed to stop scanning", err);
+            function () { /* no code in this frame yet */ }
+        ).catch(function () {
+            showError('Camera access was blocked. Allow the camera for this site, or type the SKU instead.');
         });
     });
+
+    stopScanButton.addEventListener('click', stop);
+})();
 </script>
 {% endblock %}

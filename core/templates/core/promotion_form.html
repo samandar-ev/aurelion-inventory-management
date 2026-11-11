@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">{% if editing %}Edit Promotion{% else %}New Promotion{% endif %}</h2>
+        <h1 class="h2 mb-1">{% if editing %}Edit Promotion{% else %}New Promotion{% endif %}</h1>
         <p class="text-muted small mb-0">Configure discount rules and conditions</p>
     </div>
     <a href="{% url 'promotion_list' %}" class="btn btn-view">Cancel</a>
@@ -18,24 +18,24 @@
     <div class="col-md-8">
         <div class="card mb-4">
             <div class="card-header">
-                <strong>Basic Information</strong>
+                <strong>Basic information</strong>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-8">
-                        <label class="form-label">Promotion Name *</label>
+                        <label class="form-label">Promotion name *</label>
                         <input type="text" name="name" class="form-control" value="{{ form.name.value|default:'' }}"
                             required placeholder="e.g. Holiday Sale 20% Off">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Promo Code</label>
+                        <label class="form-label">Promo code</label>
                         <input type="text" name="code" class="form-control" value="{{ form.code.value|default:'' }}"
                             placeholder="HOLIDAY20">
                     </div>
                     <div class="col-12">
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-control" rows="2"
-                            placeholder="Optional description...">{{ form.description.value|default:'' }}</textarea>
+                            placeholder="Optional">{{ form.description.value|default:'' }}</textarea>
                     </div>
                 </div>
             </div>
@@ -44,23 +44,23 @@
         
         <div class="card mb-4">
             <div class="card-header">
-                <strong>Discount Type</strong>
+                <strong>Discount type</strong>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Type *</label>
                         <select name="promo_type" class="form-select" id="promoType" onchange="toggleFields()">
-                            <option value="PERCENTAGE">Percentage Off</option>
-                            <option value="FIXED">Fixed Amount Off</option>
-                            <option value="BOGO">Buy X Get Y Free</option>
+                            <option value="PERCENTAGE">Percentage off</option>
+                            <option value="FIXED">Fixed amount off</option>
+                            <option value="BOGO">Buy X, get Y free</option>
                             <option value="TIERED">Tier-Based Discount</option>
                         </select>
                     </div>
 
                     
                     <div class="col-md-6" id="discountValueField">
-                        <label class="form-label">Discount Value</label>
+                        <label class="form-label">Discount value</label>
                         <div class="input-group">
                             <span class="input-group-text" id="discountSymbol">%</span>
                             <input type="number" name="discount_value" class="form-control" value="10" step="0.01"
@@ -70,11 +70,11 @@
 
                     
                     <div class="col-md-3 bogo-field" style="display: none;">
-                        <label class="form-label">Buy Quantity</label>
+                        <label class="form-label">Buy quantity</label>
                         <input type="number" name="buy_quantity" class="form-control" value="2" min="1">
                     </div>
                     <div class="col-md-3 bogo-field" style="display: none;">
-                        <label class="form-label">Get Free</label>
+                        <label class="form-label">Get free</label>
                         <input type="number" name="get_quantity" class="form-control" value="1" min="1">
                     </div>
 
@@ -98,17 +98,17 @@
         
         <div class="card mb-4">
             <div class="card-header">
-                <strong>Applies To</strong>
+                <strong>Applies to</strong>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Scope</label>
                         <select name="applies_to" class="form-select" id="appliesTo" onchange="toggleAppliesTo()">
-                            <option value="ALL">All Products</option>
-                            <option value="CATEGORY">Specific Category</option>
-                            <option value="BRAND">Specific Brand</option>
-                            <option value="PRODUCTS">Selected Products</option>
+                            <option value="ALL">All products</option>
+                            <option value="CATEGORY">Specific category</option>
+                            <option value="BRAND">Specific brand</option>
+                            <option value="PRODUCTS">Selected products</option>
                         </select>
                     </div>
                     <div class="col-md-4" id="categoryField" style="display: none;">
@@ -130,12 +130,12 @@
                         <input type="text" name="brand" class="form-control" value="" placeholder="e.g. Gucci">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Customer Tier</label>
+                        <label class="form-label">Customer tier</label>
                         <select name="customer_tier" class="form-select">
-                            <option value="ALL">All Customers</option>
-                            <option value="SILVER">Silver & Above</option>
-                            <option value="GOLD">Gold & Above</option>
-                            <option value="PLATINUM">Platinum Only</option>
+                            <option value="ALL">All customers</option>
+                            <option value="SILVER">Silver & above</option>
+                            <option value="GOLD">Gold & above</option>
+                            <option value="PLATINUM">Platinum only</option>
                         </select>
                     </div>
                 </div>
@@ -154,7 +154,7 @@
                         <input type="number" name="min_purchase" class="form-control" value="0" step="0.01" min="0">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Min Items</label>
+                        <label class="form-label">Min items</label>
                         <input type="number" name="min_items" class="form-control" value="0" min="0">
                     </div>
                     <div class="col-md-3">
@@ -162,7 +162,7 @@
                         <input type="number" name="max_uses" class="form-control" value="0" min="0">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Max Per Customer</label>
+                        <label class="form-label">Max per customer</label>
                         <input type="number" name="max_uses_per_customer" class="form-control" value="0" min="0">
                     </div>
                 </div>
@@ -174,7 +174,7 @@
     <div class="col-md-4">
         <div class="card mb-4">
             <div class="card-header">
-                <strong>Status & Validity</strong>
+                <strong>Status & validity</strong>
             </div>
             <div class="card-body">
                 <div class="form-check form-switch mb-3">
@@ -183,12 +183,12 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Start Date *</label>
+                    <label class="form-label">Start date *</label>
                     <input type="datetime-local" name="start_date" class="form-control" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">End Date *</label>
+                    <label class="form-label">End date *</label>
                     <input type="datetime-local" name="end_date" class="form-control" required>
                 </div>
             </div>

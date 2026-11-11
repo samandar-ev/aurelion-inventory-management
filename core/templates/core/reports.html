@@ -6,17 +6,17 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Sales Reports</h2>
+        <h1 class="h2 mb-1">Sales reports</h1>
         <p class="text-muted small mb-0">{{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}</p>
     </div>
     <div class="d-flex gap-2">
         
         <form method="get" class="d-flex gap-2">
             <select name="days" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="7" {% if selected_days == 7 %}selected{% endif %}>Last 7 Days</option>
-                <option value="30" {% if selected_days == 30 %}selected{% endif %}>Last 30 Days</option>
-                <option value="90" {% if selected_days == 90 %}selected{% endif %}>Last 90 Days</option>
-                <option value="365" {% if selected_days == 365 %}selected{% endif %}>Last Year</option>
+                <option value="7" {% if selected_days == 7 %}selected{% endif %}>Last 7 days</option>
+                <option value="30" {% if selected_days == 30 %}selected{% endif %}>Last 30 days</option>
+                <option value="90" {% if selected_days == 90 %}selected{% endif %}>Last 90 days</option>
+                <option value="365" {% if selected_days == 365 %}selected{% endif %}>Last year</option>
             </select>
         </form>
         <a href="{% url 'report_export' %}?days={{ selected_days }}" class="btn btn-primary">
@@ -26,53 +26,35 @@
 </div>
 
 
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Gross Revenue</div>
-                <h3 class="mb-0" style="color: var(--brand-primary);">{{ net_revenue|format_currency }}</h3>
-                <small class="text-muted">{{ total_orders }} orders</small>
-            </div>
-        </div>
+<section class="kpi-grid" aria-label="Period summary">
+    <div class="kpi">
+        <p class="kpi-label">Gross revenue</p>
+        <p class="kpi-value">{{ net_revenue|format_currency }}</p>
+        <p class="kpi-meta">{{ total_orders }} order{{ total_orders|pluralize }}</p>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Total Cost</div>
-                <h3 class="mb-0">{{ total_cost|format_currency }}</h3>
-                <small class="text-muted">Cost of goods sold</small>
-            </div>
-        </div>
+    <div class="kpi">
+        <p class="kpi-label">Total cost</p>
+        <p class="kpi-value">{{ total_cost|format_currency }}</p>
+        <p class="kpi-meta">Cost of goods sold</p>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Gross Profit</div>
-                <h3 class="mb-0 {% if gross_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                    {{ gross_profit|format_currency }}
-                </h3>
-                <small class="text-muted">{{ gross_margin|floatformat:1 }}% margin</small>
-            </div>
-        </div>
+    <div class="kpi">
+        <p class="kpi-label">Gross profit</p>
+        <p class="kpi-value {% if gross_profit < 0 %}text-danger{% endif %}">{{ gross_profit|format_currency }}</p>
+        <p class="kpi-meta">{{ gross_margin|floatformat:1 }}% margin</p>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Avg Order Value</div>
-                <h3 class="mb-0">{{ avg_order_value|format_currency }}</h3>
-                <small class="text-muted">{{ total_items }} items sold</small>
-            </div>
-        </div>
+    <div class="kpi">
+        <p class="kpi-label">Average order value</p>
+        <p class="kpi-value">{{ avg_order_value|format_currency }}</p>
+        <p class="kpi-meta">{{ total_items }} item{{ total_items|pluralize }} sold</p>
     </div>
-</div>
+</section>
 
 
-<div class="row g-4 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-md-8">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Sales Trend</strong>
+                <span>Sales trend</span>
                 <small class="text-muted">Daily revenue</small>
             </div>
             <div class="card-body">
@@ -83,7 +65,7 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-header">
-                <strong>Orders per Day</strong>
+                <span>Orders per day</span>
             </div>
             <div class="card-body">
                 <canvas id="ordersChart" height="200"></canvas>
@@ -93,11 +75,11 @@
 </div>
 
 
-<div class="row g-4 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <strong>Top Products by Revenue</strong>
+                <span>Top products by revenue</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm mb-0">
@@ -131,14 +113,14 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <strong>Top Products by Quantity</strong>
+                <span>Top products by quantity</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <th class="text-end">Qty Sold</th>
+                            <th class="text-end">Qty sold</th>
                             <th class="text-end">Revenue</th>
                         </tr>
                     </thead>
@@ -165,11 +147,11 @@
 </div>
 
 
-<div class="row g-4">
-    <div class="col-md-6">
+<div class="row g-3">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <strong>Sales by Category</strong>
+                <h2 class="section-title">Sales by category</h2>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm mb-0">
@@ -195,48 +177,18 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <strong>Quick Stats</strong>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="border rounded p-3 text-center">
-                            <div class="text-muted small">Refunds</div>
-                            <div class="fw-bold text-danger">{{ total_refunds|format_currency }}</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3 text-center">
-                            <div class="text-muted small">Items Sold</div>
-                            <div class="fw-bold">{{ total_items|format_number }}</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3 text-center">
-                            <div class="text-muted small">Total Orders</div>
-                            <div class="fw-bold">{{ total_orders }}</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3 text-center">
-                            <div class="text-muted small">Profit Margin</div>
-                            <div
-                                class="fw-bold {% if profit_margin >= 20 %}text-success{% elif profit_margin >= 10 %}text-warning{% else %}text-danger{% endif %}">
-                                {{ profit_margin|floatformat:1 }}%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 </div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+    // Quiet grid; the accent carries the data
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#625f58';
+    Chart.defaults.borderColor = '#efede8';
+
     // Sales Chart
     const salesCtx = document.getElementById('salesChart').getContext('2d');
     const chartLabels = {{ chart_labels| safe }};
@@ -250,10 +202,14 @@
             datasets: [{
                 label: 'Revenue',
                 data: chartRevenue,
-                borderColor: '#C0A464',
-                backgroundColor: 'rgba(192, 164, 100, 0.1)',
+                borderColor: '#1f4d3e',
+                backgroundColor: 'rgba(31, 77, 62, 0.08)',
+                borderWidth: 2,
+                pointRadius: chartRevenue.length > 1 ? 0 : 4,
+                pointHoverRadius: 4,
+                pointBackgroundColor: '#1f4d3e',
                 fill: true,
-                tension: 0.3
+                tension: 0
             }]
         },
         options: {
@@ -262,8 +218,10 @@
                 legend: { display: false }
             },
             scales: {
+                x: { grid: { display: false } },
                 y: {
                     beginAtZero: true,
+                    border: { display: false },
                     ticks: {
                         callback: function (value) {
                             return '$' + value.toLocaleString();
@@ -283,8 +241,10 @@
             datasets: [{
                 label: 'Orders',
                 data: chartOrders,
-                backgroundColor: '#1A1A1A',
-                borderRadius: 4
+                backgroundColor: '#1f4d3e',
+                hoverBackgroundColor: '#173b30',
+                borderRadius: 4,
+                maxBarThickness: 24
             }]
         },
         options: {
@@ -293,8 +253,10 @@
                 legend: { display: false }
             },
             scales: {
+                x: { grid: { display: false } },
                 y: {
                     beginAtZero: true,
+                    border: { display: false },
                     ticks: { stepSize: 1 }
                 }
             }

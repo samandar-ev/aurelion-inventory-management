@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load number_filters %}
 {% load tz %}
 
 {% block title %}Order #{{ order.order_code|default:order.id }} - AURELION{% endblock %}
@@ -6,23 +7,23 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Order #{{ order.order_code|default:order.id }}</h2>
+        <h1 class="h2 mb-1">Order #{{ order.order_code|default:order.id }}</h1>
         <p class="text-muted small mb-0">
-            {{ order.created_at|localtime|date:"F d, Y" }} at {{ order.created_at|localtime|time:"H:i" }}
+            {{ order.created_at|localtime|date:"F j, Y" }} at {{ order.created_at|localtime|time:"H:i" }}
         </p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'dashboard' %}" class="btn btn-view">← Back</a>
-        <button onclick="printReceipt()" class="btn btn-primary">Download Receipt</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-view"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</a>
+        <button onclick="printReceipt()" class="btn btn-primary">Download receipt</button>
     </div>
 </div>
 
-<div class="row g-4 mb-4">
+<div class="row g-4 mb-4 align-items-start">
     
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-body">
-                <h6 class="text-muted text-uppercase small mb-3" style="letter-spacing: 0.5px;">Order Information</h6>
+                <h2 class="section-title mb-3">Order information</h2>
                 
                 <div class="row g-3">
                     <div class="col-6">
@@ -33,9 +34,9 @@
                         <p class="text-muted small mb-1">Status</p>
                         <p class="mb-0">
                             {% if order.status == 'FULLY_RETURNED' %}
-                            <span class="badge bg-secondary">Fully Returned</span>
+                            <span class="badge bg-secondary">Fully returned</span>
                             {% elif order.status == 'PARTIALLY_RETURNED' %}
-                            <span class="badge bg-warning text-dark">Partial Return</span>
+                            <span class="badge bg-warning text-dark">Partial return</span>
                             {% elif order.status == 'COMPLETED' %}
                             <span class="badge bg-success">Completed</span>
                             {% elif order.status == 'REFUNDED' %}
@@ -55,7 +56,7 @@
                     </div>
                     <div class="col-6">
                         <p class="text-muted small mb-1">Date</p>
-                        <p class="fw-semibold mb-0">{{ order.created_at|localtime|date:"M d, Y" }}</p>
+                        <p class="fw-semibold mb-0">{{ order.created_at|localtime|date:"M j, Y" }}</p>
                     </div>
                     <div class="col-6">
                         <p class="text-muted small mb-1">Time</p>
@@ -68,23 +69,23 @@
 
     
     <div class="col-md-6">
-        <div class="card h-100">
+        <div class="card">
             <div class="card-body">
-                <h6 class="text-muted text-uppercase small mb-3" style="letter-spacing: 0.5px;">Payment Summary</h6>
+                <h2 class="section-title mb-3">Payment summary</h2>
                 
                 <div class="d-flex justify-content-between py-2">
                     <span class="text-muted">Subtotal</span>
-                    <span>${{ order.total_amount|add:order.total_discount|floatformat:2 }}</span>
+                    <span>{{ order.total_amount|add:order.total_discount|format_currency }}</span>
                 </div>
                 {% if order.total_discount > 0 %}
                 <div class="d-flex justify-content-between py-2">
                     <span class="text-muted">Discount</span>
-                    <span class="text-success">-${{ order.total_discount|floatformat:2 }}</span>
+                    <span class="text-success">−{{ order.total_discount|format_currency }}</span>
                 </div>
                 {% endif %}
                 <div class="d-flex justify-content-between py-3 border-top mt-2">
-                    <span class="fw-bold">Total</span>
-                    <span class="fw-bold fs-4" style="color: var(--brand-primary);">${{ order.total_amount|floatformat:2 }}</span>
+                    <span class="fw-semibold">Total</span>
+                    <span class="fw-semibold fs-4">{{ order.total_amount|format_currency }}</span>
                 </div>
             </div>
         </div>
@@ -94,10 +95,10 @@
 
 <div class="card">
     <div class="card-header">
-        <h6 class="mb-0">Order Items</h6>
+        <h2 class="section-title">Order items</h2>
     </div>
     <div class="table-responsive">
-        <table class="table mb-0">
+        <table class="table table-order-items mb-0">
             <thead>
                 <tr>
                     <th>Product</th>
@@ -105,7 +106,7 @@
                     <th>Variant</th>
                     <th class="text-center">Qty</th>
                     <th class="text-center">Returned</th>
-                    <th class="text-end">Unit Price</th>
+                    <th class="text-end">Unit price</th>
                     <th class="text-end">Total</th>
                 </tr>
             </thead>
@@ -127,7 +128,7 @@
                     </td>
                     <td class="{% if item.is_fully_returned %}text-muted{% endif %}">
                         {% if item.variant.color or item.variant.size %}
-                        {{ item.variant.color|default:"-" }} / {{ item.variant.size|default:"-" }}
+                        {{ item.variant.color|default:"—" }}, {{ item.variant.size|default:"—" }}
                         {% else %}
                         -
                         {% endif %}
@@ -137,11 +138,11 @@
                         {% if item.qty_returned > 0 %}
                         <span class="text-danger fw-semibold">{{ item.qty_returned }}</span>
                         {% else %}
-                        <span class="text-muted">-</span>
+                        <span class="text-muted">None</span>
                         {% endif %}
                     </td>
-                    <td class="text-end {% if item.is_fully_returned %}text-muted{% endif %}">${{ item.unit_price|floatformat:2 }}</td>
-                    <td class="text-end {% if item.is_fully_returned %}text-muted{% endif %}">${{ item.line_total|floatformat:2 }}</td>
+                    <td class="text-end {% if item.is_fully_returned %}text-muted{% endif %}">{{ item.unit_price|format_currency }}</td>
+                    <td class="text-end {% if item.is_fully_returned %}text-muted{% endif %}">{{ item.line_total|format_currency }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -153,7 +154,7 @@
 {% if order.returns.exists %}
 <div class="card mt-4">
     <div class="card-header">
-        <h6 class="mb-0">Return History</h6>
+        <h2 class="section-title">Return history</h2>
     </div>
     <div class="table-responsive">
         <table class="table mb-0">
@@ -162,14 +163,14 @@
                     <th>Date</th>
                     <th>Action</th>
                     <th>Reason</th>
-                    <th>Items Returned</th>
-                    <th>Processed By</th>
+                    <th>Items returned</th>
+                    <th>Processed by</th>
                 </tr>
             </thead>
             <tbody>
                 {% for return in order.returns.all %}
                 <tr>
-                    <td>{{ return.created_at|localtime|date:"M d, Y H:i" }}</td>
+                    <td class="text-nowrap">{{ return.created_at|localtime|date:"M j" }}<span class="text-muted ms-2">{{ return.created_at|localtime|time:"H:i" }}</span></td>
                     <td>
                         {% if return.action == 'REFUND' %}
                         <span class="badge bg-danger">Refund</span>
@@ -192,8 +193,15 @@
 </div>
 {% endif %}
 
+{{ order_data|json_script:"order-data" }}
 <script>
-    const ORDER_DATA = {{ order_data_json|safe }};
+    // Every catalog, client or server string goes through esc() before it
+    // reaches innerHTML or a receipt window: names are typed in by staff.
+    function money(n) { return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
+    }
+    const ORDER_DATA = JSON.parse(document.getElementById('order-data').textContent);
 
     function printReceipt() {
         const html = buildReceipt(ORDER_DATA);
@@ -220,16 +228,16 @@
 
         let itemsRows = '';
         data.items.forEach(item => {
-            const variant = item.color || item.size ? `${item.color || ''} ${item.size || ''}`.trim() : '';
+            const variant = item.color || item.size ? `${esc(item.color || '')} ${esc(item.size || '')}`.trim() : '';
             itemsRows += `
         <tr>
             <td>
-                <div style="font-weight: 500;">${item.name}</div>
-                <div style="color: #777; font-size: 12px;">${item.sku}${variant ? ' | ' + variant : ''}</div>
+                <div style="font-weight: 500;">${esc(item.name)}</div>
+                <div style="color: #777; font-size: 12px;">${esc(item.sku)}${variant ? ' | ' + esc(variant) : ''}</div>
             </td>
             <td style="text-align: center;">${item.qty}</td>
-            <td style="text-align: right;">$${item.price.toFixed(2)}</td>
-            <td style="text-align: right;">$${item.total.toFixed(2)}</td>
+            <td style="text-align: right;">${money(item.price)}</td>
+            <td style="text-align: right;">${money(item.total)}</td>
         </tr>`;
         });
 
@@ -239,7 +247,7 @@
             <style>
                 body { font-family: 'Inter', -apple-system, sans-serif; padding: 24px; color: #111; max-width: 400px; margin: 0 auto; }
                 h1 { letter-spacing: 2px; font-size: 24px; margin-bottom: 8px; text-align: center; }
-                .header { text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #C0A464; }
+                .header { text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #1c1b19; }
                 .muted { color: #777; font-size: 13px; margin: 4px 0; }
                 table { width: 100%; border-collapse: collapse; margin-top: 16px; }
                 th, td { padding: 10px 4px; border-bottom: 1px solid #eee; font-size: 13px; }
@@ -247,18 +255,18 @@
                 .totals { margin-top: 16px; padding-top: 16px; border-top: 2px solid #eee; }
                 .totals div { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
                 .totals .total-row { font-size: 18px; font-weight: 600; padding-top: 12px; border-top: 1px solid #eee; margin-top: 8px; }
-                .accent { color: #C0A464; font-weight: 500; }
+                .accent { color: #1c1b19; font-weight: 500; }
                 .footer { text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px dashed #ddd; }
             </style>
         </head>
         <body>
             <div class="header">
                 <h1>AURELION</h1>
-                <div class="muted">Luxury Fashion & Accessories</div>
+                <div class="muted">Luxury fashion & accessories</div>
             </div>
-            <div class="muted">Order: <strong>${data.order_code}</strong></div>
-            <div class="muted">Client: ${client}</div>
-            <div class="muted">Cashier: ${cashier}</div>
+            <div class="muted">Order: <strong>${esc(data.order_code)}</strong></div>
+            <div class="muted">Client: ${esc(client)}</div>
+            <div class="muted">Cashier: ${esc(cashier)}</div>
             <div class="muted">Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
             <table>
                 <thead>
@@ -274,12 +282,12 @@
                 </tbody>
             </table>
             <div class="totals">
-                <div><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
-                ${discount > 0 ? `<div><span>Discount</span><span style="color: #34C759;">-$${discount.toFixed(2)}</span></div>` : ''}
-                <div class="total-row"><span>Total</span><span class="accent">$${total.toFixed(2)}</span></div>
+                <div><span>Subtotal</span><span>${money(subtotal)}</span></div>
+                ${discount > 0 ? `<div><span>Discount</span><span style="color: #15803d;">-${money(discount)}</span></div>` : ''}
+                <div class="total-row"><span>Total</span><span class="accent">${money(total)}</span></div>
             </div>
             <div class="footer">
-                <p class="accent" style="margin: 0;">Thank you for your purchase!</p>
+                <p class="accent" style="margin: 0;">Thank you for your purchase</p>
                 <p class="muted" style="font-size: 11px; margin-top: 8px;">This serves as your official receipt.</p>
             </div>
         </body>

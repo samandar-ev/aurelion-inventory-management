@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load number_filters %}
 
 {% block title %}Promotions - AURELION{% endblock %}
 
@@ -6,14 +7,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Promotions</h2>
+        <h1 class="h2 mb-1">Promotions</h1>
         <p class="text-muted text-sm mb-0">Manage discounts and special offers</p>
     </div>
     <a href="{% url 'promotion_create' %}" class="btn btn-primary">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1">
             <path d="M12 5v14M5 12h14"/>
         </svg>
-        New Promotion
+        New promotion
     </a>
 </div>
 
@@ -22,13 +23,13 @@
     <div class="card-body py-3">
         <div class="d-flex gap-2">
             <a href="{% url 'promotion_list' %}"
-                class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-ghost{% endif %}">All</a>
+                class="btn btn-sm btn-ghost{% if not status_filter %} is-selected{% endif %}">All</a>
             <a href="{% url 'promotion_list' %}?status=active"
-                class="btn btn-sm {% if status_filter == 'active' %}btn-dark{% else %}btn-ghost{% endif %}">Active</a>
+                class="btn btn-sm btn-ghost{% if status_filter == 'active' %} is-selected{% endif %}">Active</a>
             <a href="{% url 'promotion_list' %}?status=scheduled"
-                class="btn btn-sm {% if status_filter == 'scheduled' %}btn-dark{% else %}btn-ghost{% endif %}">Scheduled</a>
+                class="btn btn-sm btn-ghost{% if status_filter == 'scheduled' %} is-selected{% endif %}">Scheduled</a>
             <a href="{% url 'promotion_list' %}?status=expired"
-                class="btn btn-sm {% if status_filter == 'expired' %}btn-dark{% else %}btn-ghost{% endif %}">Expired</a>
+                class="btn btn-sm btn-ghost{% if status_filter == 'expired' %} is-selected{% endif %}">Expired</a>
         </div>
     </div>
 </div>
@@ -42,7 +43,7 @@
                 
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                        <h6 class="mb-1">{{ promo.name }}</h6>
+                        <h2 class="section-title mb-1">{{ promo.name }}</h2>
                         {% with status=promo.get_status %}
                         <span class="badge {% if status == 'Active' %}bg-success{% elif status == 'Scheduled' %}bg-info{% else %}bg-secondary{% endif %}">
                             {{ status }}
@@ -50,21 +51,21 @@
                         {% endwith %}
                     </div>
                     {% if promo.code %}
-                    <code class="text-xs" style="background: var(--bg-tertiary); padding: 0.25rem 0.5rem; border-radius: 4px;">{{ promo.code }}</code>
+                    <code class="promo-code">{{ promo.code }}</code>
                     {% endif %}
                 </div>
                 
                 
-                <div class="mb-3 p-3 rounded-md" style="background: var(--bg-tertiary);">
+                <div class="mb-3">
                     <span class="text-brand fw-semibold" style="font-size: 1.125rem;">
                         {% if promo.promo_type == 'PERCENTAGE' %}
-                        {{ promo.discount_value }}% OFF
+                        {{ promo.discount_value|floatformat }}% off
                         {% elif promo.promo_type == 'FIXED' %}
-                        ${{ promo.discount_value }} OFF
+                        {{ promo.discount_value|format_currency }} off
                         {% elif promo.promo_type == 'BOGO' %}
                         Buy {{ promo.buy_quantity }} Get {{ promo.get_quantity }} Free
                         {% elif promo.promo_type == 'TIERED' %}
-                        Up to {{ promo.platinum_discount }}% OFF
+                        Up to {{ promo.platinum_discount|floatformat }}% off
                         {% else %}
                         {{ promo.get_promo_type_display }}
                         {% endif %}
@@ -117,10 +118,9 @@
 <div class="card">
     <div class="card-body">
         <div class="empty-state">
-            <p class="empty-state-icon">🎁</p>
             <p class="empty-state-title">No promotions found</p>
             <p class="empty-state-text">Create your first promotion to get started</p>
-            <a href="{% url 'promotion_create' %}" class="btn btn-primary mt-3">Create Promotion</a>
+            <a href="{% url 'promotion_create' %}" class="btn btn-primary mt-3">Create promotion</a>
         </div>
     </div>
 </div>

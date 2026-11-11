@@ -7,9 +7,9 @@
     <div class="col-lg-11">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div class="d-flex align-items-center">
-                <a href="{% url 'product_list' %}" class="text-decoration-none text-muted me-3">&larr; Back</a>
+                <a href="{% url 'product_list' %}" class="text-decoration-none text-muted me-3"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</a>
                 <div>
-                    <h2 class="mb-1">Register Luxury Product</h2>
+                    <h1 class="h2 mb-1">Register luxury product</h1>
                     <p class="text-muted small mb-0">Capture provenance, variants, packaging and compliance in one go.
                     </p>
                 </div>
@@ -45,7 +45,7 @@
             
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">1. Product Identity</h5>
+                    <h2 class="section-title">1. Product identity</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -56,7 +56,7 @@
                             {{ form.brand.errors }}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">Product Name <span
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Product name <span
                                     class="text-danger">*</span></label>
                             {{ form.name }}
                             {{ form.name.errors }}
@@ -68,7 +68,7 @@
                             {{ form.category.errors }}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.collection.id_for_label }}" class="form-label">Collection / Line</label>
+                            <label for="{{ form.collection.id_for_label }}" class="form-label">Collection / line</label>
                             {{ form.collection }}
                         </div>
                         <div class="col-md-4">
@@ -76,8 +76,7 @@
                             {{ form.season }}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">Description (rich
-                                text)</label>
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
                             {{ form.description }}
                         </div>
                     </div>
@@ -87,7 +86,7 @@
             
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">2. SKU & Codes</h5>
+                    <h2 class="section-title">2. SKU and codes</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -100,8 +99,7 @@
                         </div>
                         {% if not form.supplier_product_code.is_hidden %}
                         <div class="col-md-4">
-                            <label for="{{ form.supplier_product_code.id_for_label }}" class="form-label">Supplier
-                                Product Code</label>
+                            <label for="{{ form.supplier_product_code.id_for_label }}" class="form-label">Supplier product code</label>
                             {{ form.supplier_product_code }}
                             {{ form.supplier_product_code.errors }}
                         </div>
@@ -109,7 +107,7 @@
                         {{ form.supplier_product_code }}
                         {% endif %}
                         <div class="col-md-4">
-                            <label for="{{ form.release_year.id_for_label }}" class="form-label">Release Year</label>
+                            <label for="{{ form.release_year.id_for_label }}" class="form-label">Release year</label>
                             {{ form.release_year }}
                         </div>
                     </div>
@@ -119,7 +117,7 @@
             
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">3. Luxury Attributes</h5>
+                    <h2 class="section-title">3. Luxury attributes</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -131,7 +129,7 @@
                             <div class="form-check mb-2">
                                 {{ form.is_limited_edition }}
                                 <label class="form-check-label" for="{{ form.is_limited_edition.id_for_label }}">
-                                    Limited Edition
+                                    Limited edition
                                 </label>
                             </div>
                         </div>
@@ -142,14 +140,14 @@
             
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">4. Variants, Pricing & Stock</h5>
+                    <h2 class="section-title">4. Variants, pricing and stock</h2>
                     <span class="small text-muted">Color, size, pricing, quantity per variant.</span>
                 </div>
                 <div class="card-body">
                     {{ variant_formset.management_form }}
                     <div id="variantFormset">
                         {% for variant_form in variant_formset.forms %}
-                        <div class="card mb-3 variant-entry" data-index="{{ forloop.counter0 }}">
+                        <div class="variant-entry" data-index="{{ forloop.counter0 }}">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong>Variant {{ forloop.counter }}</strong>
@@ -195,26 +193,20 @@
                                     {% if variant_form.cost_price.is_hidden %}
                                     {{ variant_form.cost_price }}
                                     {% else %}
-                                    <div class="col-md-3">
-                                        <label for="{{ variant_form.cost_price.id_for_label }}" class="form-label">Cost
-                                            Price</label>
+                                    <div class="col-md-4">
+                                        <label for="{{ variant_form.cost_price.id_for_label }}" class="form-label">Cost price</label>
                                         {{ variant_form.cost_price }}
                                     </div>
                                     {% endif %}
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="{{ variant_form.retail_price.id_for_label }}"
-                                            class="form-label">Retail Price <span class="text-danger">*</span></label>
+                                            class="form-label">Retail price <span class="text-danger">*</span></label>
                                         {{ variant_form.retail_price }}
                                         {{ variant_form.retail_price.errors }}
                                     </div>
-                                    <div class="col-md-2">
-                                        <label for="{{ variant_form.currency.id_for_label }}"
-                                            class="form-label">Currency</label>
-                                        {{ variant_form.currency }}
-                                    </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-4">
                                         <label for="{{ variant_form.initial_quantity.id_for_label }}"
-                                            class="form-label">Current Qty <span class="text-danger">*</span></label>
+                                            class="form-label">Current qty <span class="text-danger">*</span></label>
                                         {{ variant_form.initial_quantity }}
                                         {{ variant_form.initial_quantity.errors }}
                                     </div>
@@ -225,7 +217,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <button type="button" class="btn btn-view" id="addVariantBtn">+ Add Variant</button>
+                    <button type="button" class="btn btn-secondary" id="addVariantBtn"><i class="bi bi-plus-lg" aria-hidden="true"></i>Add variant</button>
                 </div>
             </div>
 
@@ -233,58 +225,52 @@
             {% if not form.packaging_condition.is_hidden %}
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">5. Packaging & Accessories</h5>
+                    <h2 class="section-title">5. Packaging & accessories</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label d-block mb-2">Included Items</label>
+                            <label class="form-label d-block mb-2">Included items</label>
                             <div class="row">
                                 <div class="col-md-2">
                                     <div class="form-check">
                                         {{ form.has_box }}
-                                        <label class="form-check-label" for="{{ form.has_box.id_for_label }}">Box
-                                            Included</label>
+                                        <label class="form-check-label" for="{{ form.has_box.id_for_label }}">Box included</label>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="form-check">
                                         {{ form.has_dust_bag }}
-                                        <label class="form-check-label" for="{{ form.has_dust_bag.id_for_label }}">Dust
-                                            Bag</label>
+                                        <label class="form-check-label" for="{{ form.has_dust_bag.id_for_label }}">Dust bag</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-check">
                                         {{ form.has_warranty_card }}
                                         <label class="form-check-label"
-                                            for="{{ form.has_warranty_card.id_for_label }}">Warranty Card</label>
+                                            for="{{ form.has_warranty_card.id_for_label }}">Warranty card</label>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="form-check">
                                         {{ form.has_care_card }}
-                                        <label class="form-check-label" for="{{ form.has_care_card.id_for_label }}">Care
-                                            Card</label>
+                                        <label class="form-check-label" for="{{ form.has_care_card.id_for_label }}">Care card</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-check">
                                         {{ form.has_extras }}
-                                        <label class="form-check-label" for="{{ form.has_extras.id_for_label }}">Extra
-                                            Straps / Buttons / Links</label>
+                                        <label class="form-check-label" for="{{ form.has_extras.id_for_label }}">Extra straps, buttons or links</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.packaging_condition.id_for_label }}" class="form-label">Packaging
-                                Condition</label>
+                            <label for="{{ form.packaging_condition.id_for_label }}" class="form-label">Packaging condition</label>
                             {{ form.packaging_condition }}
                         </div>
                         <div class="col-md-8">
-                            <label for="{{ form.packaging_notes.id_for_label }}" class="form-label">Packaging
-                                Notes</label>
+                            <label for="{{ form.packaging_notes.id_for_label }}" class="form-label">Packaging notes</label>
                             {{ form.packaging_notes }}
                         </div>
                     </div>
@@ -298,7 +284,7 @@
             
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">6. Compliance & Materials</h5>
+                    <h2 class="section-title">6. Compliance & materials</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -306,18 +292,16 @@
                             {% if form.country_of_origin.is_hidden %}
                             {{ form.country_of_origin }}
                             {% else %}
-                            <label for="{{ form.country_of_origin.id_for_label }}" class="form-label">Country of
-                                Origin</label>
+                            <label for="{{ form.country_of_origin.id_for_label }}" class="form-label">Country of origin</label>
                             {{ form.country_of_origin }}
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.material.id_for_label }}" class="form-label">Main Materials</label>
+                            <label for="{{ form.material.id_for_label }}" class="form-label">Main materials</label>
                             {{ form.material }}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.material_composition.id_for_label }}" class="form-label">Material
-                                Composition / Blend</label>
+                            <label for="{{ form.material_composition.id_for_label }}" class="form-label">Material composition or blend</label>
                             {{ form.material_composition }}
                         </div>
                     </div>
@@ -327,23 +311,23 @@
             
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">7. Media Upload</h5>
+                    <h2 class="section-title">7. Media upload</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-lg-6">
-                            <label for="{{ form.image.id_for_label }}" class="form-label">Main Product Image <span
+                            <label for="{{ form.image.id_for_label }}" class="form-label">Main product image <span
                                     class="text-danger">*</span></label>
                             {{ form.image }}
                             {{ form.image.errors }}
                             <small class="form-text text-muted">Required. Use clear, front-on shot.</small>
                             <div class="mt-3">
-                                <img id="imagePreview" src="#" alt="Preview" style="max-height: 220px; display: none;"
+                                <img id="imagePreview" alt="Preview of the selected image" style="max-height: 220px; display: none;"
                                     class="img-fluid rounded border">
                             </div>
                         </div>
                         <div class="col-lg-6">
-                            <label class="form-label">Additional Images</label>
+                            <label class="form-label">Additional images</label>
                             <input type="file" name="additional_images" id="additionalImages" class="form-control"
                                 accept="image/*" multiple>
                             <small class="form-text text-muted">Optional gallery (multiple).</small>
@@ -355,20 +339,20 @@
             
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">8. Tags & Metadata</h5>
+                    <h2 class="section-title">8. Tags & metadata</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label for="{{ form.internal_tags.id_for_label }}" class="form-label">Internal Tags</label>
+                            <label for="{{ form.internal_tags.id_for_label }}" class="form-label">Internal tags</label>
                             {{ form.internal_tags }}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.keywords.id_for_label }}" class="form-label">Keywords for Search</label>
+                            <label for="{{ form.keywords.id_for_label }}" class="form-label">Keywords for search</label>
                             {{ form.keywords }}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.display_notes.id_for_label }}" class="form-label">Display Notes</label>
+                            <label for="{{ form.display_notes.id_for_label }}" class="form-label">Display notes</label>
                             {{ form.display_notes }}
                             <small class="form-text text-muted">Where to place in-store.</small>
                         </div>
@@ -376,8 +360,7 @@
                             {% if form.provenance_notes.is_hidden %}
                             {{ form.provenance_notes }}
                             {% else %}
-                            <label for="{{ form.provenance_notes.id_for_label }}" class="form-label">Provenance /
-                                Authentication Notes</label>
+                            <label for="{{ form.provenance_notes.id_for_label }}" class="form-label">Provenance and authentication notes</label>
                             {{ form.provenance_notes }}
                             {% endif %}
                         </div>
@@ -389,7 +372,7 @@
             <div class="d-flex justify-content-end gap-2 mb-5">
                 <a href="{% url 'product_list' %}" class="btn btn-view">Cancel</a>
                 <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="bi bi-check-circle"></i> Register Product
+                    <i class="bi bi-check-circle"></i> Register product
                 </button>
             </div>
         </form>
@@ -399,7 +382,7 @@
 
 <div id="emptyVariantForm" class="d-none">
     {% with variant_form=variant_formset.empty_form %}
-    <div class="card mb-3 variant-entry" data-index="__prefix__">
+    <div class="variant-entry" data-index="__prefix__">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
                 <strong>Variant __number__</strong>
@@ -425,27 +408,23 @@
             </div>
             <div class="row g-3 mb-2">
                 {% if not variant_form.cost_price.is_hidden %}
-                <div class="col-md-3">
-                    <label class="form-label">Cost Price</label>
+                <div class="col-md-4">
+                    <label class="form-label">Cost price</label>
                     {{ variant_form.cost_price }}
                 </div>
                 {% else %}
                 {{ variant_form.cost_price }}
                 {% endif %}
-                <div class="col-md-3">
-                    <label class="form-label">Retail Price <span class="text-danger">*</span></label>
+                <div class="col-md-4">
+                    <label class="form-label">Retail price <span class="text-danger">*</span></label>
                     {{ variant_form.retail_price }}
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Current Qty <span class="text-danger">*</span></label>
+                <div class="col-md-4">
+                    <label class="form-label">Current qty <span class="text-danger">*</span></label>
                     {{ variant_form.initial_quantity }}
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Currency</label>
-                    {{ variant_form.currency }}
-                </div>
             </div>
-            {{ variant_form.minimum_stock_level }}{{ variant_form.currency }}{{ variant_form.barcode }}{{
+            {{ variant_form.minimum_stock_level }}{{ variant_form.barcode }}{{
             variant_form.barcode_type }}
         </div>
     </div>

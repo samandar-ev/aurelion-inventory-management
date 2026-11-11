@@ -1,13 +1,13 @@
 {% extends 'core/base.html' %}
 
-{% block title %}POS - AURELION{% endblock %}
+{% block title %}Point of sale - Aurelion{% endblock %}
 
 {% block content %}
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Point of Sale</h2>
+    <h1 class="h2 mb-0">Point of sale</h1>
 </div>
 
 <div class="row g-4">
@@ -16,16 +16,16 @@
         
         <div class="card mb-3">
             <div class="card-body py-3">
-                <div class="row align-items-center">
-                    <div class="col">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-sm">
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-end-0">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                                 </svg>
                             </span>
                             <input type="text" class="form-control border-start-0" list="client-options" id="clientSearch"
-                                placeholder="Search client...">
+                                placeholder="Client name or phone">
                             <button class="btn btn-secondary" type="button" id="selectClientBtn">Select</button>
                         </div>
                         <datalist id="client-options">
@@ -36,8 +36,8 @@
                         </datalist>
                         <input type="hidden" id="clientIdHidden">
                     </div>
-                    <div class="col-auto">
-                        <a href="{% url 'client_create' %}" class="btn btn-ghost btn-sm" target="_blank">+ New Client</a>
+                    <div class="col-12 col-sm-auto">
+                        <a href="{% url 'client_create' %}" class="btn btn-secondary w-100" target="_blank" rel="noopener">New client</a>
                     </div>
                 </div>
                 <div class="text-sm text-muted mt-2" id="selectedClient">No client selected</div>
@@ -48,29 +48,24 @@
         <div class="card">
             <div class="card-body">
                 <div class="mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0" style="padding-right: 0;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color: var(--text-tertiary);">
-                                <rect x="3" y="4" width="18" height="16" rx="2"/>
-                                <path d="M7 8v8M12 8v8M17 8v8"/>
-                            </svg>
-                        </span>
-                        <input type="text" class="form-control border-start-0" list="product-options"
-                            placeholder="Scan barcode or type SKU..." autofocus id="productSearch"
-                            style="padding-left: 8px;">
+                    <div class="pos-search">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-upc-scan" aria-hidden="true"></i></span>
+                            <input type="text" class="form-control" autofocus id="productSearch" autocomplete="off"
+                                placeholder="Scan a tag, or search SKU, brand or name"
+                                aria-label="Add a product: scan a tag, or search by SKU, brand or name"
+                                role="combobox" aria-expanded="false" aria-controls="posResults" aria-autocomplete="list">
+                        </div>
+                        <ul class="pos-results" id="posResults" role="listbox" hidden></ul>
                     </div>
-                    <datalist id="product-options">
-                        {% for v in variant_data %}
-                        <option value="{{ v.sku }}"> {{ v.name }} ({{ v.color }} / {{ v.size }})</option>
-                        {% endfor %}
-                    </datalist>
+                    <p class="form-text text-danger mb-0" id="scanStatus" role="status" aria-live="polite"></p>
                 </div>
                 <div class="table-responsive">
                     <table class="table mb-0" id="posTable">
                         <thead>
                             <tr>
                                 <th>Product</th>
-                                <th style="width: 100px;">Qty</th>
+                                <th>Qty</th>
                                 <th class="text-end">Price</th>
                                 <th class="text-end">Total</th>
                                 <th style="width: 40px;"></th>
@@ -79,9 +74,9 @@
                         <tbody>
                             <tr class="empty-row">
                                 <td colspan="5">
-                                    <div class="empty-state py-4">
-                                        <p class="empty-state-icon">🛒</p>
-                                        <p class="empty-state-text">Scan an item to start</p>
+                                    <div class="empty-state py-5">
+                                        <p class="empty-state-title">The cart is empty</p>
+                                        <p class="empty-state-text">Scan a tag and the piece is added straight away, or search above and tap a result.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -94,23 +89,23 @@
 
     
     <div class="col-lg-4">
-        <div class="card" style="position: sticky; top: 80px;">
+        <div class="card" style="position: sticky; top: 72px;">
             <div class="card-header">
-                <span class="fw-semibold">Order Summary</span>
+                <span>Order summary</span>
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2 text-sm">
                     <span class="text-muted">Subtotal</span>
                     <span id="subtotal">$0.00</span>
                 </div>
-                <div class="d-flex justify-content-between mb-2 text-sm" id="promoDiscountRow" style="display: none;">
-                    <span class="text-muted">Promo Discount</span>
+                <div class="justify-content-between mb-2 text-sm" id="promoDiscountRow" style="display: none;">
+                    <span class="text-muted">Promotion</span>
                     <span class="text-success" id="promoDiscount">-$0.00</span>
                 </div>
                 <div class="divider"></div>
-                <div class="d-flex justify-content-between mb-3">
-                    <span class="fw-semibold">Total</span>
-                    <span class="fw-semibold text-brand" style="font-size: 1.25rem;" id="total">$0.00</span>
+                <div class="d-flex justify-content-between align-items-baseline gap-3 mb-3">
+                    <span class="fw-medium">Total</span>
+                    <span class="stat-value pos-total" id="total">$0.00</span>
                 </div>
 
                 
@@ -123,11 +118,11 @@
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button class="btn btn-primary" type="button" id="completeSaleBtn">Complete Sale</button>
+                    <button class="btn btn-primary" type="button" id="completeSaleBtn">Complete sale</button>
                     <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal"
                         data-bs-target="#returnModal">Return / Exchange</button>
                 </div>
-                <div class="text-muted text-sm text-center mt-3" id="posStatus"></div>
+                <div class="text-sm text-center mt-3" id="posStatus" role="status" aria-live="polite"></div>
             </div>
         </div>
     </div>
@@ -138,7 +133,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Return / Exchange</h5>
+                <h2 class="modal-title">Return / Exchange</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -149,7 +144,7 @@
                         <div class="input-group">
                             <input type="text" class="form-control" id="returnOrderCode" placeholder="e.g. A1B2C3"
                                 maxlength="6" style="text-transform: uppercase;">
-                            <button class="btn btn-primary" type="button" id="lookupOrderBtn">Find Order</button>
+                            <button class="btn btn-primary" type="button" id="lookupOrderBtn">Find order</button>
                         </div>
                         <div class="text-danger small mt-1" id="returnLookupError"></div>
                     </div>
@@ -162,7 +157,7 @@
                         <strong>Client:</strong> <span id="returnClientDisplay"></span>
                     </div>
 
-                    <h6 class="mb-2">Select Items to Return</h6>
+                    <h3 class="section-title mb-2">Select items to return</h3>
                     <div class="table-responsive mb-3">
                         <table class="table table-sm align-middle" id="returnItemsTable">
                             <thead>
@@ -199,10 +194,10 @@
 
                     
                     <div id="exchangeSection" class="d-none border-top pt-3">
-                        <h6 class="mb-2">Select Replacement Items</h6>
+                        <h3 class="section-title mb-2">Select replacement items</h3>
                         <div class="mb-2">
                             <input type="text" class="form-control form-control-sm" list="product-options"
-                                id="exchangeSearch" placeholder="Search replacement product...">
+                                id="exchangeSearch" placeholder="Replacement product">
                         </div>
                         <table class="table table-sm align-middle" id="exchangeTable">
                             <thead>
@@ -217,18 +212,18 @@
                         </table>
                     </div>
 
-                    <div class="card bg-light border-0 mt-3">
-                        <div class="card-body">
+                    <div class="return-summary mt-3">
+                        <div>
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Refund Total:</span>
+                                <span>Refund total</span>
                                 <span class="text-danger" id="modalRefundTotal">-$0.00</span>
                             </div>
                             <div class="d-flex justify-content-between mb-1 d-none" id="modalExchangeTotalRow">
-                                <span>New Items Total:</span>
+                                <span>New items</span>
                                 <span id="modalExchangeTotal">$0.00</span>
                             </div>
                             <div class="d-flex justify-content-between fw-bold border-top pt-2">
-                                <span>Net Due:</span>
+                                <span>Net due</span>
                                 <span id="modalNetDue">$0.00</span>
                             </div>
                         </div>
@@ -237,7 +232,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary d-none" id="processReturnBtn">Process Return</button>
+                <button type="button" class="btn btn-primary d-none" id="processReturnBtn">Process return</button>
             </div>
         </div>
     </div>
@@ -245,6 +240,11 @@
 
 {{ variant_data|json_script:"variant-data" }}
 <script>
+    // Every catalog, client or server string goes through esc() before it
+    // reaches innerHTML or a receipt window: names are typed in by staff.
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
+    }
     const variantData = JSON.parse(document.getElementById('variant-data').textContent);
     const variantsBySku = {};
     const variantsByProduct = {};
@@ -266,7 +266,7 @@
     const clientIdHidden = document.getElementById('clientIdHidden');
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    function currency(val) { return '$' + val.toFixed(2); }
+    function currency(val) { return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
     // Discount state
     let currentPromoDiscount = 0;
@@ -344,7 +344,7 @@
         .then(res => res.json())
         .then(data => {
             if (data.error) {
-                promoStatus.innerHTML = `<span class="text-danger">${data.error}</span>`;
+                promoStatus.innerHTML = `<span class="text-danger">${esc(data.error)}</span>`;
                 currentPromoDiscount = 0;
                 currentPromoDesc = '';
             } else {
@@ -355,7 +355,7 @@
                     promoDiscountRow.style.display = 'flex';
                     promoDiscountEl.innerText = '-' + currency(currentPromoDiscount);
                     if (currentPromoDesc && appliedPromoCode) {
-                        promoStatus.innerHTML = `<span class="text-success">✓ ${currentPromoDesc}</span>`;
+                        promoStatus.innerHTML = `<span class="text-success">Applied: ${esc(currentPromoDesc)}</span>`;
                     }
                 } else {
                     promoDiscountRow.style.display = 'none';
@@ -371,9 +371,9 @@
 
     function addItem(sku) {
         const v = variantsBySku[sku];
-        if (!v) { posStatus.innerText = 'Product not found'; return; }
-        posStatus.innerText = '';
-        const existing = tableBody.querySelector(`tr[data-sku="${sku}"]`);
+        if (!v) { scanStatus.innerText = 'No product with that SKU. Check the tag, or search by name.'; return; }
+        scanStatus.innerText = '';
+        const existing = tableBody.querySelector(`tr[data-sku="${CSS.escape(sku)}"]`);
         if (existing) {
             const qtyInput = existing.querySelector('.qty-input');
             qtyInput.value = parseInt(qtyInput.value || 0) + 1;
@@ -384,16 +384,17 @@
         tr.dataset.sku = v.sku;
         tr.dataset.price = v.price;
         tr.innerHTML = `
-            <td>
-                <div class="fw-semibold">${v.name}</div>
-                <div class="text-muted small">${v.sku} | ${v.color} / ${v.size}</div>
+            <td class="cart-item">
+                <div class="fw-medium">${esc(v.name)}</div>
+                <div class="text-muted small">${esc(v.color)}, ${esc(v.size)}</div>
+                <code class="cart-sku">${esc(v.sku)}</code>
             </td>
-            <td style="max-width:120px;">
-                <input type="number" class="form-control form-control-sm qty-input" value="1" min="1">
+            <td class="cart-qty">
+                <input type="number" class="form-control qty-input" value="1" min="1" inputmode="numeric" aria-label="Quantity of ${esc(v.name)}">
             </td>
-            <td>${currency(v.price)}</td>
-            <td class="line-total">${currency(v.price)}</td>
-            <td><button type="button" class="btn btn-delete btn-sm remove-line">&times;</button></td>
+            <td class="text-end text-nowrap">${currency(v.price)}</td>
+            <td class="line-total text-end text-nowrap">${currency(v.price)}</td>
+            <td><button type="button" class="btn btn-delete btn-sm btn-icon remove-line" aria-label="Remove ${esc(v.name)}"><i class="bi bi-x-lg" aria-hidden="true"></i></button></td>
         `;
         tableBody.appendChild(tr);
         tr.querySelector('.qty-input').addEventListener('input', recalc);
@@ -401,32 +402,99 @@
         recalc();
     }
 
-    productInput.addEventListener('change', () => {
-        const value = productInput.value.trim();
-        if (!value) return;
-        if (variantsBySku[value]) {
-            addItem(value);
-        } else {
-            const key = Object.keys(variantsByProduct).find(name => name.toLowerCase().includes(value.toLowerCase()));
-            if (key) {
-                posStatus.innerText = `Showing variants for ${key}`;
-                tableBody.innerHTML = ''; // Clear for simplicity or append? Let's append actually.
-                // Actually if searching by name, maybe show a modal or something? 
-                // For now, just add all variants of that product to the list? No that's messy.
-                // Let's just add the first one or do nothing.
-                // Reverting to previous logic: clear and show variants? No, user might have items.
-                // Let's just try to find exact SKU match first.
-                posStatus.innerText = 'Product not found (try SKU)';
-            } else {
-                posStatus.innerText = 'Product not found';
-            }
-        }
+    // Product search: exact SKU (what a scanner sends) adds at once;
+    // anything else lists matches to tap. Searching never touches the cart.
+    const resultsEl = document.getElementById('posResults');
+    const scanStatus = document.getElementById('scanStatus');
+    let matches = [];
+    let active = -1;
+
+    function hideResults() {
+        resultsEl.hidden = true;
+        resultsEl.innerHTML = '';
+        productInput.setAttribute('aria-expanded', 'false');
+        matches = []; active = -1;
+    }
+
+    function markActive() {
+        Array.from(resultsEl.children).forEach((li, i) => li.classList.toggle('active', i === active));
+        const el = resultsEl.children[active];
+        if (el) { el.scrollIntoView({ block: 'nearest' }); productInput.setAttribute('aria-activedescendant', el.id); }
+    }
+
+    function pick(v) {
+        if (!v || v.stock <= 0) return;
+        addItem(v.sku);
         productInput.value = '';
+        hideResults();
+        productInput.focus();
+    }
+
+    function search(q) {
+        const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+        return variantData.filter(v => {
+            const hay = [v.sku, v.name, v.color, v.size].join(' ').toLowerCase();
+            return terms.every(t => hay.includes(t));
+        }).slice(0, 8);
+    }
+
+    productInput.addEventListener('input', () => {
+        scanStatus.innerText = '';
+        const q = productInput.value.trim();
+        if (q.length < 2) { hideResults(); return; }
+        matches = search(q);
+        active = matches.findIndex(v => v.stock > 0);
+        resultsEl.innerHTML = '';
+        if (!matches.length) {
+            resultsEl.innerHTML = `<li class="pos-result-empty">No product matches “${esc(q)}”</li>`;
+        }
+        matches.forEach((v, i) => {
+            const li = document.createElement('li');
+            li.id = `pos-opt-${i}`;
+            li.setAttribute('role', 'option');
+            li.className = 'pos-result' + (v.stock <= 0 ? ' is-disabled' : '');
+            li.setAttribute('aria-disabled', v.stock <= 0 ? 'true' : 'false');
+            li.innerHTML = `
+                <span class="pos-result-main">
+                    <span class="fw-medium">${esc(v.name)}</span>
+                    <span class="text-muted text-sm">${esc(v.color)}, ${esc(v.size)} <code>${esc(v.sku)}</code></span>
+                </span>
+                <span class="pos-result-side">
+                    <span class="fw-medium">${currency(v.price)}</span>
+                    ${v.stock <= 0 ? '<span class="badge bg-danger">Sold out</span>' : v.stock < 5 ? `<span class="badge bg-warning">${v.stock} in stock</span>` : `<span class="text-muted text-sm">${v.stock} in stock</span>`}
+                </span>`;
+            li.addEventListener('mousedown', e => { e.preventDefault(); pick(v); });
+            resultsEl.appendChild(li);
+        });
+        resultsEl.hidden = false;
+        productInput.setAttribute('aria-expanded', 'true');
+        markActive();
     });
+
+    productInput.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown' && matches.length) { active = (active + 1) % matches.length; markActive(); e.preventDefault(); }
+        else if (e.key === 'ArrowUp' && matches.length) { active = (active - 1 + matches.length) % matches.length; markActive(); e.preventDefault(); }
+        else if (e.key === 'Escape') { hideResults(); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = productInput.value.trim();
+            if (!value) return;
+            if (variantsBySku[value]) { addItem(value); productInput.value = ''; hideResults(); return; }
+            if (matches[active]) { pick(matches[active]); return; }
+            scanStatus.innerText = matches.length
+                ? 'Every piece that matches is sold out.'
+                : `No product matches “${value}”. Check the tag, or search by name.`;
+        }
+    });
+
+    // Hide only if focus really left the field: the client datalist can blur it for an instant
+    productInput.addEventListener('blur', () => setTimeout(() => {
+        if (document.activeElement !== productInput) hideResults();
+    }, 120));
 
     selectClientBtn.addEventListener('click', () => {
         const val = clientSearch.value;
-        const option = document.querySelector(`#client-options option[value="${val}"]`);
+        const option = document.querySelector(`#client-options option[value="${CSS.escape(val)}"]`);
         if (option && option.dataset.id) {
             clientIdHidden.value = option.dataset.id;
             selectedClient.innerText = `Client: ${val}`;
@@ -532,6 +600,10 @@
 
     // --- Return Modal Logic ---
     const returnModal = document.getElementById('returnModal');
+    if (new URLSearchParams(location.search).get('return') === '1') {
+        // Bootstrap's bundle loads after this inline script
+        document.addEventListener('DOMContentLoaded', () => bootstrap.Modal.getOrCreateInstance(returnModal).show());
+    }
     const returnOrderCode = document.getElementById('returnOrderCode');
     const lookupOrderBtn = document.getElementById('lookupOrderBtn');
     const returnStep1 = document.getElementById('returnStep1');
@@ -578,28 +650,28 @@
                     let rowClass = '';
 
                     if (item.status === 'returned') {
-                        statusBadge = '<span class="badge bg-secondary">🔁 Already Returned</span>';
+                        statusBadge = '<span class="badge bg-secondary">Already returned</span>';
                         checkboxDisabled = 'disabled';
                         rowClass = 'text-muted opacity-50';
                     } else if (item.status === 'not_eligible') {
-                        statusBadge = '<span class="badge bg-danger">🚫 Not Eligible</span>';
+                        statusBadge = '<span class="badge bg-danger">Not eligible</span>';
                         checkboxDisabled = 'disabled';
                         rowClass = 'text-muted opacity-50';
                     } else if (item.status === 'returnable') {
-                        statusBadge = '<span class="badge bg-success">✅ Returnable</span>';
+                        statusBadge = '<span class="badge bg-success">Returnable</span>';
                     }
 
                     tr.className = rowClass;
                     tr.innerHTML = `
                         <td><input type="checkbox" class="form-check-input return-check" ${checkboxDisabled}></td>
                         <td>
-                            <div class="fw-semibold">${item.name}</div>
-                            <div class="text-muted small">${item.sku} | ${item.color} ${item.size}</div>
+                            <div class="fw-semibold">${esc(item.name)}</div>
+                            <div class="text-muted small">${esc(item.sku)} | ${esc(item.color)} ${esc(item.size)}</div>
                             ${item.returned_qty > 0 ? `<div class="text-warning small">Returned: ${item.returned_qty}/${item.original_qty}</div>` : ''}
                             ${statusBadge}
                         </td>
                         <td><input type="number" class="form-control form-control-sm return-qty" value="${item.qty}" min="1" max="${item.qty}" disabled></td>
-                        <td class="text-end">$${item.price.toFixed(2)}</td>
+                        <td class="text-end">${currency(item.price)}</td>
                     `;
                     tbody.appendChild(tr);
 
@@ -655,13 +727,13 @@
             tr.dataset.price = v.price;
             tr.innerHTML = `
                 <td>
-                    <div class="fw-semibold">${v.name}</div>
-                    <div class="text-muted small">${v.sku} | ${v.color} ${v.size}</div>
+                    <div class="fw-semibold">${esc(v.name)}</div>
+                    <div class="text-muted small">${esc(v.sku)} | ${esc(v.color)} ${esc(v.size)}</div>
                     ${v.stock !== undefined ? `<div class="text-info small">Stock: ${v.stock}</div>` : ''}
                 </td>
                 <td><input type="number" class="form-control form-control-sm ex-qty" value="1" min="1" ${v.stock !== undefined ? `max="${v.stock}"` : ''}></td>
-                <td class="text-end">$${v.price.toFixed(2)}</td>
-                <td><button type="button" class="btn btn-delete btn-sm remove-ex">&times;</button></td>
+                <td class="text-end">${currency(v.price)}</td>
+                <td><button type="button" class="btn btn-delete btn-sm btn-icon remove-ex" aria-label="Remove item"><i class="bi bi-x-lg" aria-hidden="true"></i></button></td>
             `;
             exchangeTable.appendChild(tr);
             const qtyInput = tr.querySelector('.ex-qty');
@@ -699,12 +771,12 @@
         });
 
         const net = exchangeTotal - refundTotal;
-        document.getElementById('modalRefundTotal').innerText = `-$${refundTotal.toFixed(2)}`;
-        document.getElementById('modalExchangeTotal').innerText = `$${exchangeTotal.toFixed(2)}`;
-        document.getElementById('modalNetDue').innerText = `${net >= 0 ? '$' : '-$'}${Math.abs(net).toFixed(2)}`;
+        document.getElementById('modalRefundTotal').innerText = `-${currency(refundTotal)}`;
+        document.getElementById('modalExchangeTotal').innerText = `${currency(exchangeTotal)}`;
+        document.getElementById('modalNetDue').innerText = `${net < 0 ? '−' : ''}${currency(Math.abs(net))}`;
 
         // Update button text?
-        processReturnBtn.innerText = net > 0 ? `Pay $${net.toFixed(2)} & Process` : (net < 0 ? `Refund $${Math.abs(net).toFixed(2)} & Process` : 'Process Return');
+        processReturnBtn.innerText = net > 0 ? `Pay ${currency(net)} and process` : (net < 0 ? `Refund ${currency(Math.abs(net))} and process` : 'Process return');
     }
 
     processReturnBtn.addEventListener('click', () => {
@@ -787,8 +859,8 @@
         const itemsRows = lines.map(l => `
             <tr>
                 <td>
-                    <div class="item-name">${l.name}</div>
-                    <div class="item-meta">${l.sku} • ${l.color || ''} ${l.size || ''}</div>
+                    <div class="item-name">${esc(l.name)}</div>
+                    <div class="item-meta">${esc(l.sku)} • ${esc(l.color || '')} ${esc(l.size || '')}</div>
                 </td>
                 <td class="text-center">${l.qty}</td>
                 <td class="text-end">${currency(l.price)}</td>
@@ -813,12 +885,12 @@
                 th { text-align: left; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; font-size: 11px; }
                 .text-center { text-align: center; }
                 .text-end { text-align: right; }
-                .item-name { font-weight: 600; color: #111827; }
+                .item-name { font-weight: 600; color: #1c1b19; }
                 .item-meta { color: #9ca3af; font-size: 11px; }
                 .totals { margin-top: 12px; border-top: 1px solid #e5e7eb; padding-top: 10px; }
                 .totals-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 12px; }
                 .totals-row.strong { font-weight: 700; font-size: 13px; }
-                .accent { color: #b8965c; }
+                .accent { color: #1c1b19; }
                 .footer { margin-top: 16px; text-align: center; font-size: 11px; color: #6b7280; }
             </style>
         </head>
@@ -830,10 +902,10 @@
                             <div class="brand">AURELION</div>
                             <div class="muted">Luxury Retail • VAT Included</div>
                         </div>
-                        ${orderCode ? `<span class="badge">Order ${orderCode}</span>` : ''}
+                        ${orderCode ? `<span class="badge">Order ${esc(orderCode)}</span>` : ''}
                     </div>
                     <div class="muted" style="margin-top:6px;">
-                        Client: ${client} &nbsp; • &nbsp; Cashier: ${cashier} &nbsp; • &nbsp; Date: ${now.toLocaleString()}
+                        Client: ${esc(client)} &nbsp; • &nbsp; Cashier: ${esc(cashier)} &nbsp; • &nbsp; Date: ${now.toLocaleString()}
                     </div>
                 </div>
 
@@ -873,38 +945,38 @@
 
         let returnedRows = '';
         if (data.returned_items && data.returned_items.length) {
-            returnedRows += `<tr><td colspan="4" class="fw-bold bg-light" style="font-size:11px; padding-top:8px;">RETURNED ITEMS</td></tr>`;
+            returnedRows += `<tr><td colspan="4" class="fw-bold bg-light" style="font-size:11px; padding-top:8px;">Returned items</td></tr>`;
             data.returned_items.forEach(item => {
                 const price = parseFloat(item.price) || 0;
                 const total = parseFloat(item.total) || (price * item.qty);
                 returnedRows += `
                 <tr>
                     <td>
-                        <div class="fw-semibold">${item.name || 'Unknown'}</div>
-                        <div class="text-muted small">${item.sku || ''}</div>
+                        <div class="fw-semibold">${esc(item.name || 'Unknown')}</div>
+                        <div class="text-muted small">${esc(item.sku || '')}</div>
                     </td>
                     <td class="text-center">-${item.qty}</td>
-                    <td class="text-end">$${price.toFixed(2)}</td>
-                    <td class="text-end text-danger">-$${total.toFixed(2)}</td>
+                    <td class="text-end">${currency(price)}</td>
+                    <td class="text-end text-danger">-${currency(total)}</td>
                 </tr>`;
             });
         }
 
         let replacementRows = '';
         if (data.replacement_items && data.replacement_items.length) {
-            replacementRows += `<tr><td colspan="4" class="fw-bold bg-light" style="font-size:11px; padding-top:8px;">REPLACEMENT ITEMS</td></tr>`;
+            replacementRows += `<tr><td colspan="4" class="fw-bold bg-light" style="font-size:11px; padding-top:8px;">Replacement items</td></tr>`;
             data.replacement_items.forEach(item => {
                 const price = parseFloat(item.price) || 0;
                 const total = parseFloat(item.total) || (price * item.qty);
                 replacementRows += `
                 <tr>
                     <td>
-                        <div class="fw-semibold">${item.name || 'Unknown'}</div>
-                        <div class="text-muted small">${item.sku || ''}</div>
+                        <div class="fw-semibold">${esc(item.name || 'Unknown')}</div>
+                        <div class="text-muted small">${esc(item.sku || '')}</div>
                     </td>
                     <td class="text-center">${item.qty}</td>
-                    <td class="text-end">$${price.toFixed(2)}</td>
-                    <td class="text-end">$${total.toFixed(2)}</td>
+                    <td class="text-end">${currency(price)}</td>
+                    <td class="text-end">${currency(total)}</td>
                 </tr>`;
             });
         }
@@ -920,16 +992,16 @@
             th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
             .totals { margin-top: 16px; border-top: 2px solid #eee; padding-top: 12px; }
             .totals div { display: flex; justify-content: space-between; padding: 4px 0; }
-            .accent { color: #D4AF37; margin-top: 24px; text-align: center; font-weight: 500; }
+            .accent { color: #1c1b19; margin-top: 24px; text-align: center; font-weight: 500; }
         </style>
         </head>
         <body>
             <h1>AURELION</h1>
             <div class="muted">Date: ${now.toLocaleString()}</div>
-            <div class="muted">Cashier: ${data.cashier || 'Staff'}</div>
-            <div class="muted">Client: ${data.client || 'Walk-in'}</div>
-            <div class="muted">Original Order: ${data.original_order_code || data.original_order || ''}</div>
-            <div class="muted">Type: ${data.action || 'REFUND'}</div>
+            <div class="muted">Cashier: ${esc(data.cashier || 'Staff')}</div>
+            <div class="muted">Client: ${esc(data.client || 'Walk-in')}</div>
+            <div class="muted">Original Order: ${esc(data.original_order_code || data.original_order || '')}</div>
+            <div class="muted">Type: ${esc(data.action || 'REFUND')}</div>
             
             <table>
                 <thead>
@@ -947,11 +1019,11 @@
             </table>
             
             <div class="totals">
-                <div><span>Total Refund</span><span class="text-danger">-$${refundAmount.toFixed(2)}</span></div>
-                ${exchangeTotal > 0 ? `<div><span>New Items</span><span>$${exchangeTotal.toFixed(2)}</span></div>` : ''}
+                <div><span>Total refund</span><span class="text-danger">-${currency(refundAmount)}</span></div>
+                ${exchangeTotal > 0 ? `<div><span>New items</span><span>${currency(exchangeTotal)}</span></div>` : ''}
                 <div style="font-weight:bold; font-size:1.1em; margin-top:8px;">
                     <span>Net ${net >= 0 ? 'Due' : 'Refund'}</span>
-                    <span>$${Math.abs(net).toFixed(2)}</span>
+                    <span>${currency(Math.abs(net))}</span>
                 </div>
             </div>
             

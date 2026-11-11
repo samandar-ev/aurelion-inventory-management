@@ -5,117 +5,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
     <title>{% block title %}AURELION{% endblock %}</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{% static 'core/css/aurelion.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 
 <body>
     {% if user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">AURELION</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                            href="{% url 'dashboard' %}">Dashboard</a>
-                    </li>
-                    {% if user.is_cashier %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'orders' in request.path %}active{% endif %}"
-                            href="{% url 'order_list' %}">Orders</a>
-                    </li>
-                    {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'products' in request.path and 'archived' not in request.path %}active{% endif %}"
-                            href="{% url 'product_list' %}">Inventory</a>
-                    </li>
-                    {% if user.is_cashier %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'barcodes' in request.path %}active{% endif %}"
-                            href="{% url 'barcode_generator' %}">Barcodes</a>
-                    </li>
-                    {% endif %}
-                    {% if user.is_owner %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'archived' in request.path %}active{% endif %}"
-                            href="{% url 'archived_product_list' %}">Archived</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'promotions' in request.path %}active{% endif %}"
-                            href="{% url 'promotion_list' %}">Promotions</a>
-                    </li>
-                    {% endif %}
-                    {% if user.is_cashier %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'clients' in request.path %}active{% endif %}"
-                            href="{% url 'client_list' %}">Clients</a>
-                    </li>
-                    {% endif %}
-                    {% if user.is_owner %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'reports' in request.path %}active{% endif %}"
-                            href="{% url 'reports' %}">Reports</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'personnel' in request.path %}active{% endif %}"
-                            href="{% url 'personnel_list' %}">Personnel</a>
-                    </li>
-                    {% endif %}
-                    {% if user.is_cashier and not user.is_owner %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'pos' in request.path %}active{% endif %}"
-                            href="{% url 'pos' %}">POS</a>
-                    </li>
-                    {% endif %}
-                </ul>
-                <div class="d-flex align-items-center">
-                    <span class="text-muted small me-3">
-                        {{ user.username }}
-                        <span style="color: rgba(255,255,255,0.2); margin: 0 0.375rem;">·</span>
-                        {{ user.get_role_display }}
-                    </span>
-                    <form action="{% url 'logout' %}" method="post" class="mb-0">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-ghost" style="color: rgba(255,255,255,0.5);">
-                            Logout
-                        </button>
-                    </form>
+    {% with path=request.path name=request.resolver_match.url_name %}
+    <div class="app">
+        <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+            <a class="sidebar-brand" href="{% url 'dashboard' %}">{% include 'core/_mark.html' %}Aurelion</a>
+
+            <nav class="sidebar-nav">
+                <p class="nav-group">Store</p>
+                <a class="nav-item {% if name == 'dashboard' or name == 'associate_dashboard' %}active{% endif %}" href="{% if user.is_cashier %}{% url 'dashboard' %}{% else %}{% url 'associate_dashboard' %}{% endif %}">
+                    <i class="bi bi-house" aria-hidden="true"></i>Dashboard</a>
+                {% if user.is_cashier and not user.is_owner %}
+                <a class="nav-item {% if 'pos' in path %}active{% endif %}" href="{% url 'pos' %}">
+                    <i class="bi bi-bag" aria-hidden="true"></i>Point of sale<kbd class="nav-kbd">S</kbd></a>
+                {% endif %}
+                {% if user.is_cashier %}
+                <a class="nav-item {% if 'orders' in path %}active{% endif %}" href="{% url 'order_list' %}">
+                    <i class="bi bi-receipt" aria-hidden="true"></i>Orders</a>
+                <a class="nav-item {% if 'clients' in path %}active{% endif %}" href="{% url 'client_list' %}">
+                    <i class="bi bi-person" aria-hidden="true"></i>Clients</a>
+                {% endif %}
+
+                <p class="nav-group">Catalog</p>
+                <a class="nav-item {% if 'products' in path and 'archived' not in path %}active{% endif %}" href="{% url 'product_list' %}">
+                    <i class="bi bi-box-seam" aria-hidden="true"></i>Inventory</a>
+                {% if user.is_cashier %}
+                <a class="nav-item {% if 'barcodes' in path %}active{% endif %}" href="{% url 'barcode_generator' %}">
+                    <i class="bi bi-upc" aria-hidden="true"></i>Barcodes</a>
+                {% endif %}
+                {% if user.is_owner %}
+                <a class="nav-item {% if 'archived' in path %}active{% endif %}" href="{% url 'archived_product_list' %}">
+                    <i class="bi bi-archive" aria-hidden="true"></i>Archived</a>
+
+                <p class="nav-group">Business</p>
+                <a class="nav-item {% if 'promotions' in path %}active{% endif %}" href="{% url 'promotion_list' %}">
+                    <i class="bi bi-tag" aria-hidden="true"></i>Promotions</a>
+                <a class="nav-item {% if 'reports' in path %}active{% endif %}" href="{% url 'reports' %}">
+                    <i class="bi bi-graph-up" aria-hidden="true"></i>Reports</a>
+                <a class="nav-item {% if 'personnel' in path %}active{% endif %}" href="{% url 'personnel_list' %}">
+                    <i class="bi bi-people" aria-hidden="true"></i>Personnel</a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-user">
+                <span class="avatar" aria-hidden="true">{{ user.username|slice:":1"|upper }}</span>
+                <div class="sidebar-user-text">
+                    <p>{{ user.get_full_name|default:user.username }}</p>
+                    <p>{{ user.get_role_display }}</p>
                 </div>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" aria-label="Log out" title="Log out">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    </button>
+                </form>
             </div>
+        </aside>
+        <div class="scrim" id="scrim" hidden></div>
+
+        <div class="main-col">
+            <header class="topbar">
+                <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="search-trigger" id="paletteBtn" aria-haspopup="dialog">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <span>Search or jump to</span>
+                    <kbd>⌘K</kbd>
+                </button>
+                {% if user.is_cashier and not user.is_owner and 'pos' not in path %}
+                <a href="{% url 'pos' %}" class="btn btn-primary btn-sm topbar-action">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>New sale
+                </a>
+                {% endif %}
+            </header>
+
+            <main class="content" id="content">
+                {% block content %}{% endblock %}
+            </main>
         </div>
-    </nav>
+    </div>
+
+    <dialog class="palette" id="palette" aria-label="Search or jump to"
+            data-products="{% url 'product_list' %}"
+            data-clients="{% url 'client_list' %}"
+            {% if user.is_cashier %}data-orders="{% url 'dashboard' %}"{% endif %}>
+        <div class="palette-input">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" id="paletteInput" placeholder="Search or jump to" autocomplete="off"
+                   role="combobox" aria-expanded="true" aria-controls="paletteList">
+            <kbd>esc</kbd>
+        </div>
+        <ul class="palette-list" id="paletteList" role="listbox"></ul>
+    </dialog>
+    {% endwith %}
+    {% else %}
+    {% block public %}{% endblock %}
     {% endif %}
 
-    <main class="{% if user.is_authenticated %}container py-4{% endif %}">
-        {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
+    {% if messages %}
+    <div class="toasts" role="status" aria-live="polite">
+        {% for message in messages %}
+        <div class="toast-item toast-{{ message.tags }}">
+            <span class="toast-dot" aria-hidden="true"></span>
+            <p>{{ message }}</p>
+            <button type="button" class="icon-btn" aria-label="Dismiss"><i class="bi bi-x" aria-hidden="true"></i></button>
         </div>
-        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
 
-        {% block content %}{% endblock %}
-    </main>
-
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function () {
+        // Toasts: dismissable, quiet ones leave on their own
+        document.querySelectorAll('.toast-item').forEach(function (t) {
+            var close = function () { t.classList.add('leaving'); setTimeout(function () { t.remove(); }, 220); };
+            t.querySelector('button').addEventListener('click', close);
+            if (!t.classList.contains('toast-error')) setTimeout(close, 5000);
+        });
+
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+
+        // Mobile navigation
+        var menuBtn = document.getElementById('menuBtn'), scrim = document.getElementById('scrim');
+        function setNav(open) {
+            sidebar.classList.toggle('open', open);
+            scrim.hidden = !open;
+            menuBtn.setAttribute('aria-expanded', open);
+        }
+        menuBtn.addEventListener('click', function () { setNav(true); });
+        scrim.addEventListener('click', function () { setNav(false); });
+
+        // Command palette: every page in the sidebar plus search shortcuts
+        var palette = document.getElementById('palette'), input = document.getElementById('paletteInput'),
+            list = document.getElementById('paletteList'), items = [], cursor = 0;
+        var pages = Array.from(sidebar.querySelectorAll('.nav-item')).map(function (a) {
+            return { label: Array.from(a.childNodes).filter(function (n) { return n.nodeType === 3; }).map(function (n) { return n.textContent; }).join('').trim(), hint: 'Go to', href: a.href, icon: a.querySelector('i').className };
+        });
+
+        function render() {
+            var q = input.value.trim(), lq = q.toLowerCase();
+            items = pages.filter(function (p) { return p.label.toLowerCase().indexOf(lq) > -1; });
+            if (q) {
+                var enc = encodeURIComponent(q);
+                items.push({ label: 'Find “' + q + '” in inventory', hint: 'Search', href: palette.dataset.products + '?q=' + enc, icon: 'bi bi-box-seam' });
+                items.push({ label: 'Find “' + q + '” in clients', hint: 'Search', href: palette.dataset.clients + '?q=' + enc, icon: 'bi bi-person' });
+                if (palette.dataset.orders) items.push({ label: 'Find order “' + q + '”', hint: 'Search', href: palette.dataset.orders + '?search=' + enc, icon: 'bi bi-receipt' });
+            }
+            cursor = Math.min(cursor, items.length - 1);
+            list.innerHTML = '';
+            items.forEach(function (it, i) {
+                var li = document.createElement('li');
+                li.setAttribute('role', 'option');
+                li.className = i === cursor ? 'active' : '';
+                li.innerHTML = '<i class="' + it.icon + '" aria-hidden="true"></i><span></span><small>' + it.hint + '</small>';
+                li.querySelector('span').textContent = it.label;
+                li.addEventListener('mousemove', function () { if (cursor !== i) { cursor = i; mark(); } });
+                li.addEventListener('click', function () { location.href = it.href; });
+                list.appendChild(li);
+            });
+        }
+        function mark() {
+            Array.from(list.children).forEach(function (li, i) { li.classList.toggle('active', i === cursor); });
+            if (list.children[cursor]) list.children[cursor].scrollIntoView({ block: 'nearest' });
+        }
+        function open() { input.value = ''; cursor = 0; render(); palette.showModal(); input.focus(); }
+
+        document.getElementById('paletteBtn').addEventListener('click', open);
+        input.addEventListener('input', function () { cursor = 0; render(); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown') { cursor = (cursor + 1) % items.length; mark(); e.preventDefault(); }
+            if (e.key === 'ArrowUp') { cursor = (cursor - 1 + items.length) % items.length; mark(); e.preventDefault(); }
+            if (e.key === 'Enter' && items[cursor]) location.href = items[cursor].href;
+        });
+        palette.addEventListener('click', function (e) { if (e.target === palette) palette.close(); });
+
+        var typing = function (el) { return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable); };
+        document.addEventListener('keydown', function (e) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); palette.open ? palette.close() : open(); return; }
+            if (e.key === 'Escape' && sidebar.classList.contains('open')) setNav(false);
+            if (typing(document.activeElement) || e.metaKey || e.ctrlKey || e.altKey || palette.open) return;
+            if (e.key === '/') { e.preventDefault(); open(); }
+            var pos = sidebar.querySelector('a[href$="/pos/"]');
+            if (e.key.toLowerCase() === 's' && pos && !location.pathname.endsWith('/pos/')) location.href = pos.href;
+        });
+    })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 

@@ -265,7 +265,7 @@ class Client(models.Model):
         return self.LoyaltyTier.REGULAR
 
     def dynamic_tier_label(self):
-        return self.get_tier_display() if hasattr(self, 'get_tier_display') else self.get_tier()
+        return self.LoyaltyTier(self.get_tier()).label
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}".strip()
@@ -340,6 +340,21 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.order_code or self.id}"
+
+    @classmethod
+    def generate_code(cls):
+        import random
+        import string
+        while True:
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            if not cls.objects.filter(order_code=code).exists():
+                return code
+
+    def save(self, *args, **kwargs):
+        # Every order carries a short code staff can read off a receipt
+        if not self.order_code:
+            self.order_code = self.generate_code()
+        super().save(*args, **kwargs)
 
     @property
     def ui_status(self):

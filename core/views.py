@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
@@ -21,6 +22,35 @@ from .permissions import (
 )
 from django.views.generic.edit import CreateView
 
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+
+def is_image_upload(upload):
+    """True only for a real image file with an image extension, under the size cap.
+
+    Files land in MEDIA_ROOT and are served from this origin, so anything that
+    is not a decodable image (HTML, SVG, scripts) must never be stored.
+    """
+    from django.core.validators import validate_image_file_extension
+    try:
+        if upload.size > MAX_IMAGE_BYTES:
+            return False
+        validate_image_file_extension(upload)
+        upload.seek(0)
+        Image.open(upload).verify()
+        upload.seek(0)
+        return True
+    except Exception:
+        return False
+
+
+def _sheet_safe(value):
+    """Keep spreadsheet apps from evaluating stored text as a formula."""
+    if isinstance(value, str) and value[:1] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + value
+    return value
+
+
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
     redirect_authenticated_user = True
@@ -34,6 +64,12 @@ class CustomLoginView(LoginView):
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'core/dashboard.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        # Sales figures and orders are for cashiers and owners
+        if request.user.is_authenticated and not request.user.is_cashier():
+            return redirect('associate_dashboard')
+        return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -49,6 +85,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         low_stock = []
         low_stock_count = 0
         active_promotions = []
+        sales_curve = []
         db_error = None
         
         try:
@@ -82,18 +119,18 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 .select_related('variant__product')
                 .values('variant__product__id', 'variant__product__name', 'variant__product__brand')
                 .annotate(total_qty=Sum('quantity'), total_sales=Sum(F('quantity') * F('unit_price')))
-                .order_by('-total_qty')[:5]
+                .order_by('-total_sales', '-total_qty')[:5]
             )
             
             low_stock = list(
                 ProductVariant.objects
-                .filter(initial_quantity__lt=5, product__is_archived=False)
+                .filter(initial_quantity__lte=F('minimum_stock_level'), product__is_archived=False)
                 .select_related('product')
                 .order_by('-updated_at')[:5]
             )
             
             low_stock_count = ProductVariant.objects.filter(
-                initial_quantity__lt=5, 
+                initial_quantity__lte=F('minimum_stock_level'),
                 product__is_archived=False
             ).count()
             
@@ -106,7 +143,22 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             )
             
             today_count = today_orders.count()
-            
+
+            # Running total through the day, for the dashboard's sales line
+            by_hour = defaultdict(Decimal)
+            for created_at, amount in today_orders.values_list('created_at', 'total_amount'):
+                by_hour[timezone.localtime(created_at).hour] += amount
+            first = min([9, *by_hour])
+            last = max([timezone.localtime().hour, *by_hour])
+            running = Decimal('0')
+            for hour in range(first, last + 1):
+                running += by_hour[hour]
+                sales_curve.append({'h': f'{hour:02d}:00', 'v': float(running)})
+
+            top_sales = max((p['total_sales'] or 0 for p in top_products), default=0)
+            for p in top_products:
+                p['share'] = round((p['total_sales'] or 0) / top_sales * 100) if top_sales else 0
+
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
@@ -125,6 +177,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'low_stock': low_stock,
             'low_stock_count': low_stock_count,
             'active_promotions': active_promotions,
+            'sales_curve': sales_curve,
             'db_error': db_error,
         })
         return context
@@ -138,7 +191,7 @@ class OrderListView(CashierRequiredMixin, ListView):
     def get_queryset(self):
         return Order.objects.order_by('-created_at')
 
-class OrderDetailView(LoginRequiredMixin, DetailView):
+class OrderDetailView(CashierRequiredMixin, DetailView):
     model = Order
     template_name = 'core/order_detail.html'
     context_object_name = 'order'
@@ -171,7 +224,7 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
                 for item in items
             ]
         }
-        context['order_data_json'] = json.dumps(order_data)
+        context['order_data'] = order_data
         return context
 
 class ProductListView(SalesAssociateRequiredMixin, ListView):
@@ -249,7 +302,7 @@ class ProductListView(SalesAssociateRequiredMixin, ListView):
         return context
 
 
-class ArchivedProductListView(LoginRequiredMixin, ListView):
+class ArchivedProductListView(OwnerRequiredMixin, ListView):
     model = Product
     template_name = 'core/product_list.html'
     context_object_name = 'products'
@@ -487,8 +540,11 @@ class LuxuryProductUpdateView(OwnerRequiredMixin, View):
             form_kwargs={'user': request.user}
         )
         additional_images = request.FILES.getlist('additional_images')
-        
-        if product_form.is_valid() and variant_formset.is_valid():
+        rejected = [f.name for f in additional_images if not is_image_upload(f)]
+        if rejected:
+            messages.error(request, f"Not an image: {', '.join(rejected)}. Use JPEG, PNG or WebP under 10 MB.")
+
+        if product_form.is_valid() and variant_formset.is_valid() and not rejected:
             with transaction.atomic():
                 product = product_form.save()
                 self._normalize_image(product.image)
@@ -757,8 +813,11 @@ class LuxuryProductCreateView(CashierRequiredMixin, CreateView):
             form_kwargs={'user': request.user}
         )
         additional_images = request.FILES.getlist('additional_images')
-        
-        if product_form.is_valid() and variant_formset.is_valid():
+        rejected = [f.name for f in additional_images if not is_image_upload(f)]
+        if rejected:
+            messages.error(request, f"Not an image: {', '.join(rejected)}. Use JPEG, PNG or WebP under 10 MB.")
+
+        if product_form.is_valid() and variant_formset.is_valid() and not rejected:
             with transaction.atomic():
                 product = product_form.save(commit=False)
                 product.is_luxury_product = True
@@ -865,11 +924,61 @@ class ClientDetailView(SalesAssociateRequiredMixin, DetailView):
     template_name = 'core/client_detail.html'
     context_object_name = 'client'
 
-class CashierOnlyMixin(LoginRequiredMixin):
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_sales_associate():
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+class CashierOnlyMixin(CashierRequiredMixin):
+    """POS JSON endpoints: cashiers and owners only."""
+    raise_exception = True
+
+class CartError(Exception):
+    pass
+
+
+def parse_cart(items, lock=False):
+    """Turn POS line items into (variant, qty) pairs priced from the catalog.
+
+    Prices sent by the browser are ignored: the till can only charge what the
+    catalog says. With lock=True the variants are row-locked so concurrent
+    sales cannot both take the last piece.
+    """
+    if not isinstance(items, list):
+        raise CartError('Invalid items')
+    wanted = {}
+    for item in items:
+        if not isinstance(item, dict):
+            raise CartError('Invalid items')
+        sku = str(item.get('sku') or '').strip()
+        try:
+            qty = int(item.get('qty') or 0)
+        except (TypeError, ValueError):
+            raise CartError(f'Invalid quantity for {sku}')
+        if not sku or qty <= 0:
+            continue
+        if qty > 1000:
+            raise CartError(f'Quantity too large for {sku}')
+        wanted[sku] = wanted.get(sku, 0) + qty
+
+    variants = ProductVariant.objects.select_related('product').filter(sku__in=wanted)
+    if lock:
+        variants = variants.select_for_update()
+    by_sku = {v.sku: v for v in variants}
+    lines = []
+    for sku, qty in wanted.items():
+        variant = by_sku.get(sku)
+        if variant is None:
+            raise CartError(f'Product with SKU {sku} not found')
+        lines.append((variant, qty))
+    return lines
+
+
+def check_stock(lines):
+    for variant, qty in lines:
+        if variant.initial_quantity < qty:
+            product_name = f"{variant.product.brand} {variant.product.name}"
+            variant_desc = f"{variant.color}/{variant.size}" if variant.color or variant.size else "variant"
+            raise CartError(
+                f'Insufficient stock for {product_name} ({variant_desc}). '
+                f'Only {variant.initial_quantity} available, but {qty} requested.'
+            )
+
 
 class POSView(CashierRequiredMixin, TemplateView):
     template_name = 'core/pos.html'
@@ -920,26 +1029,22 @@ class POSPreviewDiscountView(CashierOnlyMixin, View):
             except Client.DoesNotExist:
                 pass
         
+        try:
+            lines = parse_cart(items)
+        except CartError as e:
+            return JsonResponse({'error': str(e)}, status=400)
         cart_items = []
         subtotal = Decimal('0.00')
-        for item in items:
-            sku = item.get('sku')
-            qty = int(item.get('qty') or 0)
-            price = Decimal(str(item.get('price') or '0'))
-            if not sku or qty <= 0:
-                continue
-            try:
-                variant = ProductVariant.objects.select_related('product').get(sku=sku)
-                cart_items.append({
-                    'sku': sku,
-                    'qty': qty,
-                    'price': float(price),
-                    'total': float(price * qty),
-                    'product': variant.product,
-                })
-                subtotal += price * qty
-            except ProductVariant.DoesNotExist:
-                continue
+        for variant, qty in lines:
+            price = variant.retail_price
+            cart_items.append({
+                'sku': variant.sku,
+                'qty': qty,
+                'price': float(price),
+                'total': float(price * qty),
+                'product': variant.product,
+            })
+            subtotal += price * qty
         
         if not cart_items:
             return JsonResponse({'discount': 0, 'description': ''})
@@ -1015,137 +1120,127 @@ class POSCheckoutView(CashierOnlyMixin, View):
                 client_name = f"{client_obj.first_name} {client_obj.last_name}".strip() or client_obj.phone or client_name
             except Client.DoesNotExist:
                 client_obj = None
-        discount = Decimal(payload.get('discount') or 0)
+        # Manual discounts are not part of the till; only promotions reduce a sale
+        discount = Decimal('0.00')
         if not items:
             return HttpResponseBadRequest("No items provided")
-        
-        for item in items:
-            sku = item.get('sku')
-            qty = int(item.get('qty') or 0)
-            if not sku or qty <= 0:
-                continue
-            try:
-                variant = ProductVariant.objects.get(sku=sku)
-                if variant.initial_quantity < qty:
-                    product_name = f"{variant.product.brand} {variant.product.name}"
-                    variant_desc = f"{variant.color}/{variant.size}" if variant.color or variant.size else "variant"
-                    return JsonResponse({
-                        'error': f'Insufficient stock for {product_name} ({variant_desc}). Only {variant.initial_quantity} available, but {qty} requested.'
-                    }, status=400)
-            except ProductVariant.DoesNotExist:
-                return JsonResponse({'error': f'Product with SKU {sku} not found'}, status=400)
-        
+
         location = Location.objects.first()
         if not location:
             location = Location.objects.create(name='Main Warehouse', code='MAIN', address='N/A')
-        
-        with transaction.atomic():
-            order = Order.objects.create(
-                order_code=self._generate_code(),
-                client=client_obj,
-                location=location,
-                created_by=request.user,
-                status=Order.Status.COMPLETED,
-                total_amount=Decimal('0.00'),
-                total_discount=discount,
+
+        try:
+            with transaction.atomic():
+                lines = parse_cart(items, lock=True)
+                if not lines:
+                    raise CartError('No items provided')
+                check_stock(lines)
+                order, created_items, subtotal = self._checkout(request, lines, client_obj, location, promo_code, discount)
+        except CartError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        return self._receipt(request, order, client_name, created_items, subtotal)
+
+    def _checkout(self, request, lines, client_obj, location, promo_code, discount):
+        order = Order.objects.create(
+            order_code=self._generate_code(),
+            client=client_obj,
+            location=location,
+            created_by=request.user,
+            status=Order.Status.COMPLETED,
+            total_amount=Decimal('0.00'),
+            total_discount=discount,
+        )
+        total = Decimal('0.00')
+        created_items = []
+        for variant, qty in lines:
+            price = variant.retail_price
+            line_total = price * qty
+            total += line_total
+            OrderItem.objects.create(
+                order=order,
+                variant=variant,
+                quantity=qty,
+                unit_price=price,
+                line_discount=Decimal('0.00'),
             )
-            total = Decimal('0.00')
-            created_items = []
-            for item in items:
-                sku = item.get('sku')
-                qty = int(item.get('qty') or 0)
-                price = Decimal(str(item.get('price') or '0'))
-                if not sku or qty <= 0:
-                    continue
-                try:
-                    variant = ProductVariant.objects.get(sku=sku)
-                except ProductVariant.DoesNotExist:
-                    continue
-                line_total = price * qty
-                total += line_total
-                oi = OrderItem.objects.create(
-                    order=order,
-                    variant=variant,
-                    quantity=qty,
-                    unit_price=price,
-                    line_discount=Decimal('0.00'),
-                )
-                variant.initial_quantity = max(0, variant.initial_quantity - qty)
-                variant.save(update_fields=['initial_quantity'])
-                created_items.append({
-                    'name': f"{variant.product.brand} {variant.product.name}",
-                    'sku': variant.sku,
-                    'color': variant.color,
-                    'size': variant.size,
-                    'qty': qty,
-                    'price': float(price),
-                    'total': float(line_total),
-                    'product': variant.product,                             
-                })
-            
-            promo_discount = Decimal('0.00')
-            promo_description = ''
-            
-            best_discount = Decimal('0.00')
-            best_promo = None
-            best_desc = ''
-            
-            if promo_code:
-                try:
-                    code_promo = Promotion.objects.get(
-                        code__iexact=promo_code,
-                        is_active=True,
-                        start_date__lte=timezone.now(),
-                        end_date__gte=timezone.now()
-                    )
-                    if code_promo.max_uses == 0 or code_promo.used_count < code_promo.max_uses:
-                        promo_amount, promo_desc = code_promo.calculate_discount(created_items, client_obj)
-                        if promo_amount > 0:
-                            best_discount = promo_amount
-                            best_promo = code_promo
-                            best_desc = promo_desc
-                except Promotion.DoesNotExist:
-                    pass                                                
-            
-            if not best_promo:
-                active_promos = Promotion.objects.filter(
-                    is_active=True,
-                    start_date__lte=timezone.now(),
-                    end_date__gte=timezone.now(),
-                    code__isnull=True                                        
-                ) | Promotion.objects.filter(
-                    is_active=True,
-                    start_date__lte=timezone.now(),
-                    end_date__gte=timezone.now(),
-                    code=''
-                )
-                
-                for promo in active_promos:
-                    if promo.max_uses > 0 and promo.used_count >= promo.max_uses:
-                        continue
-                    promo_amount, promo_desc = promo.calculate_discount(created_items, client_obj)
-                    if promo_amount > best_discount:
-                        best_discount = promo_amount
-                        best_promo = promo
-                        best_desc = promo_desc
-            
-            if best_promo and best_discount > 0:
-                promo_discount = best_discount
-                promo_description = f"{best_promo.name}: {best_desc}"
-                best_promo.used_count += 1
-                best_promo.save(update_fields=['used_count'])
-                PromotionUsage.objects.create(
-                    promotion=best_promo,
-                    client=client_obj,
-                    order=order,
-                    discount_amount=promo_discount
-                )
-            
-            total_discount = discount + promo_discount
-            order.total_amount = total - total_discount
-            order.total_discount = total_discount
-            order.save(update_fields=['total_amount', 'total_discount'])
+            variant.initial_quantity = variant.initial_quantity - qty
+            variant.save(update_fields=['initial_quantity'])
+            created_items.append({
+                'name': f"{variant.product.brand} {variant.product.name}",
+                'sku': variant.sku,
+                'color': variant.color,
+                'size': variant.size,
+                'qty': qty,
+                'price': float(price),
+                'total': float(line_total),
+                'product': variant.product,
+            })
+
+        promo_discount = Decimal('0.00')
+        promo_description = ''
         
+        best_discount = Decimal('0.00')
+        best_promo = None
+        best_desc = ''
+        
+        if promo_code:
+            try:
+                code_promo = Promotion.objects.get(
+                    code__iexact=promo_code,
+                    is_active=True,
+                    start_date__lte=timezone.now(),
+                    end_date__gte=timezone.now()
+                )
+                if code_promo.max_uses == 0 or code_promo.used_count < code_promo.max_uses:
+                    promo_amount, promo_desc = code_promo.calculate_discount(created_items, client_obj)
+                    if promo_amount > 0:
+                        best_discount = promo_amount
+                        best_promo = code_promo
+                        best_desc = promo_desc
+            except Promotion.DoesNotExist:
+                pass                                                
+        
+        if not best_promo:
+            active_promos = Promotion.objects.filter(
+                is_active=True,
+                start_date__lte=timezone.now(),
+                end_date__gte=timezone.now(),
+                code__isnull=True                                        
+            ) | Promotion.objects.filter(
+                is_active=True,
+                start_date__lte=timezone.now(),
+                end_date__gte=timezone.now(),
+                code=''
+            )
+            
+            for promo in active_promos:
+                if promo.max_uses > 0 and promo.used_count >= promo.max_uses:
+                    continue
+                promo_amount, promo_desc = promo.calculate_discount(created_items, client_obj)
+                if promo_amount > best_discount:
+                    best_discount = promo_amount
+                    best_promo = promo
+                    best_desc = promo_desc
+        
+        if best_promo and best_discount > 0:
+            promo_discount = best_discount
+            promo_description = f"{best_promo.name}: {best_desc}"
+            best_promo.used_count += 1
+            best_promo.save(update_fields=['used_count'])
+            PromotionUsage.objects.create(
+                promotion=best_promo,
+                client=client_obj,
+                order=order,
+                discount_amount=promo_discount
+            )
+        
+        total_discount = discount + promo_discount
+        order.total_amount = total - total_discount
+        order.total_discount = total_discount
+        order.save(update_fields=['total_amount', 'total_discount'])
+        return order, created_items, total
+
+    def _receipt(self, request, order, client_name, created_items, total):
         response_items = [
             {k: v for k, v in item.items() if k != 'product'}
             for item in created_items
@@ -1162,6 +1257,20 @@ class POSCheckoutView(CashierOnlyMixin, View):
             'items': response_items,
             'created_at': timezone.localtime(order.created_at).isoformat(),
         })
+
+RETURN_WINDOW_DAYS = 10
+
+
+def return_block_reason(order):
+    """Why an order cannot be returned, or None. Checked at lookup and again at checkout."""
+    if order.type == Order.Type.RETURN:
+        return 'This is a return/refund order and cannot be returned again.'
+    if order.status == Order.Status.FULLY_RETURNED:
+        return 'This order has already been fully returned. No items are available for return or exchange.'
+    if (timezone.now() - order.created_at).days > RETURN_WINDOW_DAYS:
+        return 'No items are eligible for return. Return window has expired.'
+    return None
+
 
 def calculate_order_return_status(order):
     """
@@ -1218,7 +1327,7 @@ class POSReturnLookupView(CashierOnlyMixin, View):
                 'reason': 'This order has already been fully returned. No items are available for return or exchange.'
             })
 
-        return_window_days = 10
+        return_window_days = RETURN_WINDOW_DAYS
         days_since_purchase = (timezone.now() - order.created_at).days
         within_return_window = days_since_purchase <= return_window_days
 
@@ -1284,7 +1393,7 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
         try:
             payload = json.loads(request.body.decode('utf-8'))
         except Exception as e:
-            return JsonResponse({'error': f'Invalid payload: {str(e)}'}, status=400)
+            return JsonResponse({'error': 'Invalid payload'}, status=400)
 
         order_code = payload.get('order_code')
         reason = payload.get('reason', 'OTHER')
@@ -1306,11 +1415,23 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
             else:
                 return JsonResponse({'error': f'Order not found: {order_code}'}, status=404)
 
+        if action not in Return.Action.values or reason not in Return.Reason.values:
+            return JsonResponse({'error': 'Invalid return reason or action'}, status=400)
+        if not isinstance(return_items, list) or not isinstance(replacement_items, list):
+            return JsonResponse({'error': 'Invalid items'}, status=400)
+        blocked = return_block_reason(original_order)
+        if blocked:
+            return JsonResponse({'error': blocked}, status=400)
+
         location = original_order.location
         client_obj = original_order.client
 
         try:
             with transaction.atomic():
+                # Replacements are priced from the catalog and stock is locked
+                replacement_cart = parse_cart(replacement_items, lock=True)
+                check_stock(replacement_cart)
+
                 return_obj = Return.objects.create(
                     original_order=original_order,
                     created_by=request.user,
@@ -1319,41 +1440,24 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
                 )
 
                 refund_amount = Decimal('0.00')
-                
-                returned_map = {}
-                for ret in original_order.returns.all():
-                    for ri in ret.items.all():
-                        returned_map[ri.order_item_id] = returned_map.get(ri.order_item_id, 0) + ri.quantity
-
-                for item in replacement_items:
-                    sku = item.get('sku')
-                    qty = int(item.get('qty') or 0)
-                    if not sku or qty <= 0:
-                        continue
-                    try:
-                        variant = ProductVariant.objects.get(sku=sku)
-                        if variant.initial_quantity < qty:
-                            product_name = f"{variant.product.brand} {variant.product.name}"
-                            variant_desc = f"{variant.color}/{variant.size}" if variant.color or variant.size else "variant"
-                            return JsonResponse({
-                                'error': f'Insufficient stock for exchange item: {product_name} ({variant_desc}). Only {variant.initial_quantity} available, but {qty} requested.'
-                            }, status=400)
-                    except ProductVariant.DoesNotExist:
-                        return JsonResponse({'error': f'Product with SKU {sku} not found'}, status=400)
 
                 for item in return_items:
-                    order_item_id = item.get('id')
-                    qty = int(item.get('qty') or 0)
+                    if not isinstance(item, dict):
+                        raise CartError('Invalid items')
+                    try:
+                        qty = int(item.get('qty') or 0)
+                    except (TypeError, ValueError):
+                        raise CartError('Invalid quantity')
                     if qty <= 0:
                         continue
-                    
+
                     try:
-                        order_item = OrderItem.objects.get(id=order_item_id, order=original_order)
-                    except OrderItem.DoesNotExist:
+                        order_item = OrderItem.objects.select_for_update().get(id=item.get('id'), order=original_order)
+                    except (OrderItem.DoesNotExist, ValueError, TypeError):
                         continue
-                    
+
                     if qty > order_item.qty_remaining:
-                        raise Exception(f"Cannot return {qty} of {order_item.variant}. Only {order_item.qty_remaining} remaining (already returned {order_item.qty_returned}).")
+                        raise CartError(f"Cannot return {qty} of {order_item.variant}. Only {order_item.qty_remaining} remaining (already returned {order_item.qty_returned}).")
 
                     ReturnItem.objects.create(
                         return_process=return_obj,
@@ -1364,30 +1468,23 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
 
                     order_item.qty_returned = F('qty_returned') + qty
                     order_item.save(update_fields=['qty_returned'])
-                    order_item.refresh_from_db()                     
+                    order_item.refresh_from_db()
 
                     variant = order_item.variant
-                    variant.initial_quantity = variant.initial_quantity + qty
+                    variant.initial_quantity = F('initial_quantity') + qty
                     variant.save(update_fields=['initial_quantity'])
 
                     refund_amount += order_item.unit_price * qty
 
+                if refund_amount == 0 and not replacement_cart:
+                    raise CartError('Select at least one item to return')
+
                 replacement_total = Decimal('0.00')
                 replacement_lines = []
-                
-                for item in replacement_items:
-                    sku = item.get('sku')
-                    qty = int(item.get('qty') or 0)
-                    price = Decimal(str(item.get('price') or '0'))
-                    if not sku or qty <= 0:
-                        continue
-                    try:
-                        variant = ProductVariant.objects.get(sku=sku)
-                    except ProductVariant.DoesNotExist:
-                        continue
-                    
+                for variant, qty in replacement_cart:
+                    price = variant.retail_price
                     replacement_total += price * qty
-                    variant.initial_quantity = max(0, variant.initial_quantity - qty)
+                    variant.initial_quantity = variant.initial_quantity - qty
                     variant.save(update_fields=['initial_quantity'])
                     replacement_lines.append({
                         'variant': variant,
@@ -1395,7 +1492,6 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
                         'price': price,
                     })
 
-                
                 replacement_order = None
                 if replacement_lines:
                     replacement_order = Order.objects.create(
@@ -1429,7 +1525,9 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
                 returned_items_list = []
                 for item in return_items:
                     try:
-                        oi = OrderItem.objects.get(id=item.get('id'))
+                        if int(item.get('qty') or 0) <= 0:
+                            continue
+                        oi = OrderItem.objects.get(id=item.get('id'), order=original_order)
                         returned_items_list.append({
                             'name': f"{oi.variant.product.brand} {oi.variant.product.name}",
                             'sku': oi.variant.sku,
@@ -1439,7 +1537,7 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
                             'price': float(oi.unit_price),
                             'total': float(oi.unit_price * int(item.get('qty')))
                         })
-                    except: 
+                    except (OrderItem.DoesNotExist, ValueError, TypeError):
                         pass
 
                 replacement_items_list = []
@@ -1474,11 +1572,13 @@ class POSReturnCheckoutView(CashierRequiredMixin, View):
                     'cashier': request.user.username,
                     'client': str(client_obj) if client_obj else 'Walk-in',
                 })
-        except Exception as e:
-            return JsonResponse({'error': f'Error processing return: {str(e)}'}, status=400)
+        except CartError as e:
+            return JsonResponse({'error': str(e)}, status=400)
 
-class POSReturnView(CashierRequiredMixin, TemplateView):
-    template_name = 'core/pos_return.html'
+class POSReturnView(CashierRequiredMixin, View):
+    """Returns live in the POS; this URL opens it with the return panel showing."""
+    def get(self, request):
+        return redirect(f"{reverse_lazy('pos')}?return=1")
 
 class ReportView(OwnerRequiredMixin, TemplateView):
     template_name = 'core/reports.html'
@@ -1489,7 +1589,10 @@ class ReportView(OwnerRequiredMixin, TemplateView):
         
         context = super().get_context_data(**kwargs)
         
-        days = int(self.request.GET.get('days', 30))
+        try:
+            days = min(max(int(self.request.GET.get('days', 30)), 1), 366)
+        except (TypeError, ValueError):
+            days = 30
         end_date = timezone.now()
         start_date = end_date - timedelta(days=days)
         
@@ -1547,14 +1650,18 @@ class ReportView(OwnerRequiredMixin, TemplateView):
             orders=Count('id')
         ).order_by('date')
         
+        # Every day in the range gets a point, so quiet days read as zero
+        by_day = {entry['date']: entry for entry in daily_sales}
         chart_labels = []
         chart_revenue = []
         chart_orders = []
-        
-        for entry in daily_sales:
-            chart_labels.append(entry['date'].strftime('%b %d'))
-            chart_revenue.append(float(entry['revenue'] or 0))
-            chart_orders.append(entry['orders'])
+        first_day = timezone.localtime(start_date).date()
+        for offset in range(days + 1):
+            day = first_day + timedelta(days=offset)
+            entry = by_day.get(day, {})
+            chart_labels.append(day.strftime('%b %d'))
+            chart_revenue.append(float(entry.get('revenue') or 0))
+            chart_orders.append(entry.get('orders', 0))
         
         top_products = OrderItem.objects.filter(
             order__in=completed_orders
@@ -1617,8 +1724,9 @@ class SalesAssociateDashboardView(SalesAssociateRequiredMixin, TemplateView):
             products = Product.objects.filter(
                 Q(base_sku__icontains=query) |
                 Q(name__icontains=query) |
+                Q(brand__icontains=query) |
                 Q(variants__sku__icontains=query)
-            ).distinct()
+            ).filter(is_archived=False).distinct()
             context['products'] = products
             context['query'] = query
         return context
@@ -1747,10 +1855,18 @@ class PersonnelCreateView(OwnerRequiredMixin, View):
         elif User.objects.filter(username=username).exists():
             errors.append("Username already exists.")
         
+        if role not in User.Role.values:
+            errors.append("Choose a valid role.")
+
         if not password:
             errors.append("Password is required.")
-        elif len(password) < 4:
-            errors.append("Password must be at least 4 characters.")
+        else:
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError
+            try:
+                validate_password(password, User(username=username, first_name=first_name, last_name=last_name))
+            except ValidationError as e:
+                errors.extend(e.messages)
         
         if password != confirm_password:
             errors.append("Passwords do not match.")
@@ -1806,7 +1922,10 @@ class ReportExportView(OwnerRequiredMixin, View):
             messages.error(request, "Excel export requires openpyxl. Install with: pip install openpyxl")
             return redirect('reports')
         
-        days = int(request.GET.get('days', 30))
+        try:
+            days = min(max(int(request.GET.get('days', 30)), 1), 366)
+        except (TypeError, ValueError):
+            days = 30
         end_date = timezone.now()
         start_date = end_date - timedelta(days=days)
         
@@ -1868,12 +1987,12 @@ class ReportExportView(OwnerRequiredMixin, View):
             cell.font = header_font
         
         for row, order in enumerate(orders, start=2):
-            ws2.cell(row=row, column=1, value=order.order_code)
+            ws2.cell(row=row, column=1, value=_sheet_safe(order.order_code))
             ws2.cell(row=row, column=2, value=order.created_at.strftime('%Y-%m-%d %H:%M'))
-            ws2.cell(row=row, column=3, value=str(order.client) if order.client else 'Walk-in')
+            ws2.cell(row=row, column=3, value=_sheet_safe(str(order.client) if order.client else 'Walk-in'))
             ws2.cell(row=row, column=4, value=order.items.count())
             ws2.cell(row=row, column=5, value=float(order.total_amount))
-            ws2.cell(row=row, column=6, value=order.created_by.username if order.created_by else '')
+            ws2.cell(row=row, column=6, value=_sheet_safe(order.created_by.username if order.created_by else ''))
         
         ws3 = wb.create_sheet("Top Products")
         headers = ['Product', 'Brand', 'Qty Sold', 'Revenue']
@@ -1889,8 +2008,8 @@ class ReportExportView(OwnerRequiredMixin, View):
         ).order_by('-total_revenue')[:20]
         
         for row, item in enumerate(top_products, start=2):
-            ws3.cell(row=row, column=1, value=item['variant__product__name'])
-            ws3.cell(row=row, column=2, value=item['variant__product__brand'])
+            ws3.cell(row=row, column=1, value=_sheet_safe(item['variant__product__name']))
+            ws3.cell(row=row, column=2, value=_sheet_safe(item['variant__product__brand']))
             ws3.cell(row=row, column=3, value=item['total_qty'])
             ws3.cell(row=row, column=4, value=float(item['total_revenue']))
         

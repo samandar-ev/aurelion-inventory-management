@@ -147,7 +147,18 @@ class LuxuryProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         self.fields['image'].required = True
-        self.fields['base_sku'].required = False                           
+        self.fields['base_sku'].required = False
+
+        # No silent defaults on a new piece: staff pick category and material
+        if not self.instance.pk:
+            self.initial.setdefault('category', '')
+            self.fields['category'].choices = [('', 'Select a category')] + list(Product.CATEGORY_CHOICES)
+            self.fields['category'].widget.choices = self.fields['category'].choices
+        material = self.fields['material']
+        material.widget.choices = [('', 'Select a material')] + [c for c in material.widget.choices if c[0]]
+        if 'packaging_condition' in self.fields:
+            pc = self.fields['packaging_condition']
+            pc.choices = [('', 'Select condition')] + [c for c in pc.choices if c[0]]
         self.fields['base_sku'].widget.attrs.setdefault('placeholder', 'Auto-generated if left blank')
         self.fields['image'].widget.attrs.update({'class': 'form-control', 'accept': 'image/*'})
 
@@ -185,7 +196,7 @@ class ProductVariantForm(forms.ModelForm):
         required=False,
         choices=Barcode.Type.choices,
         initial=Barcode.Type.EAN13,
-        label='Barcode Type',
+        label='Barcode type',
         widget=forms.HiddenInput()
     )
     
@@ -219,8 +230,10 @@ class ProductVariantForm(forms.ModelForm):
         self.fields['cost_price'].initial = Decimal('0.00')
         
         if user and not user.is_owner():
+            # Disabled, not just hidden: Django ignores posted values for disabled fields
             self.fields['cost_price'].widget = forms.HiddenInput()
             self.fields['cost_price'].required = False
+            self.fields['cost_price'].disabled = True
             self.fields['cost_price'].initial = Decimal('0.00')
             
         self.fields['minimum_stock_level'].initial = 1

@@ -6,18 +6,15 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">{% if is_archived_view %}Archived Products{% else %}Inventory{% endif %}</h2>
-        <p class="text-muted text-sm mb-0">{% if is_archived_view %}View and restore archived items{% else %}Manage your product catalog{% endif %}</p>
+        <h1 class="h2 mb-1">{% if is_archived_view %}Archived products{% else %}Inventory{% endif %}</h1>
+        {% if is_archived_view %}<p class="text-muted text-sm mb-0">Restore a product to sell it again</p>{% endif %}
     </div>
-    {% if user.is_owner and not is_archived_view %}
+    {% if user.is_cashier and not is_archived_view %}
     <div class="d-flex gap-2">
+        <a href="{% url 'product_create' %}" class="btn btn-secondary">Quick add</a>
         <a href="{% url 'luxury_product_create' %}" class="btn btn-primary">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Add Product
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>Add product
         </a>
-        <a href="{% url 'product_create' %}" class="btn btn-secondary">Quick Add</a>
     </div>
     {% endif %}
 </div>
@@ -57,29 +54,28 @@
 
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="get" class="row g-2 align-items-end" id="searchSortForm">
-            <div class="col-md-5">
-                <input type="text" name="q" class="form-control form-control-sm" 
-                       placeholder="Search by brand, name, or SKU..." 
-                       value="{{ request.GET.q }}" 
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-center" id="searchSortForm" role="search">
+            <div class="input-group input-group-sm flex-grow-1" style="max-width: 420px;">
+                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                <input type="search" name="q" class="form-control"
+                       placeholder="Brand, name or SKU" aria-label="Search inventory"
+                       value="{{ request.GET.q }}"
                        onchange="this.form.submit()">
             </div>
-            <div class="col-md-4">
-                <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Sort by: Default</option>
+            <div>
+                <select name="sort" class="form-select form-select-sm" aria-label="Sort products" onchange="this.form.submit()">
+                    <option value="">Sort: default</option>
                     <option value="name_asc" {% if request.GET.sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
                     <option value="name_desc" {% if request.GET.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
                     <option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>Price (Low-High)</option>
                     <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Price (High-Low)</option>
-                    <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>Newest First</option>
+                    <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>Newest first</option>
                     <option value="stock_asc" {% if request.GET.sort == 'stock_asc' %}selected{% endif %}>Stock (Low-High)</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#filterModal">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1">
-                        <path d="M3 4h18M3 12h12M3 20h6"/>
-                    </svg>
+            <div>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
                     Filters
                     {% if active_filters %}<span class="badge bg-dark ms-1">{{ active_filters }}</span>{% endif %}
                 </button>
@@ -98,7 +94,7 @@
         <div class="modal-content">
             <form method="get">
                 <div class="modal-header">
-                    <h5 class="modal-title">Filter Products</h5>
+                    <h2 class="modal-title">Filter products</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -108,7 +104,7 @@
                     <div class="mb-3">
                         <label class="form-label text-sm fw-medium">Category</label>
                         <select name="category" class="form-select">
-                            <option value="">All Categories</option>
+                            <option value="">All categories</option>
                             <option value="Bags" {% if request.GET.category == 'Bags' %}selected{% endif %}>Bags</option>
                             <option value="Shoes" {% if request.GET.category == 'Shoes' %}selected{% endif %}>Shoes</option>
                             <option value="Clothing" {% if request.GET.category == 'Clothing' %}selected{% endif %}>Clothing</option>
@@ -123,7 +119,7 @@
                     <div class="mb-3">
                         <label class="form-label text-sm fw-medium">Brand</label>
                         <select name="brand" class="form-select">
-                            <option value="">All Brands</option>
+                            <option value="">All brands</option>
                             {% for brand in brands %}
                             <option value="{{ brand }}" {% if request.GET.brand == brand %}selected{% endif %}>{{ brand }}</option>
                             {% endfor %}
@@ -133,7 +129,7 @@
                     <div class="mb-3">
                         <label class="form-label text-sm fw-medium">Season</label>
                         <select name="season" class="form-select">
-                            <option value="">All Seasons</option>
+                            <option value="">All seasons</option>
                             {% for season in seasons %}
                             <option value="{{ season }}" {% if request.GET.season == season %}selected{% endif %}>{{ season }}</option>
                             {% endfor %}
@@ -143,7 +139,7 @@
                     <div class="mb-0">
                         <label class="form-label text-sm fw-medium">Material</label>
                         <select name="material" class="form-select">
-                            <option value="">All Materials</option>
+                            <option value="">All materials</option>
                             {% for material in materials %}
                             <option value="{{ material }}" {% if request.GET.material == material %}selected{% endif %}>{{ material }}</option>
                             {% endfor %}
@@ -151,8 +147,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <a href="{% if is_archived_view %}{% url 'archived_product_list' %}{% else %}{% url 'product_list' %}{% endif %}" class="btn btn-ghost">Clear All</a>
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% if is_archived_view %}{% url 'archived_product_list' %}{% else %}{% url 'product_list' %}{% endif %}" class="btn btn-ghost">Clear all</a>
+                    <button type="submit" class="btn btn-primary">Apply filters</button>
                 </div>
             </form>
         </div>
@@ -175,7 +171,7 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table class="table mb-0">
+        <table class="table table-inventory mb-0">
             <thead>
                 <tr>
                     <th style="width: 60px;"></th>
@@ -192,12 +188,9 @@
                 <tr style="cursor: pointer;" onclick="window.location='{% url 'product_detail' product.pk %}';">
                     <td>
                         {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="" 
-                             style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px;">
+                        <img src="{{ product.image.url }}" alt="" class="thumb" loading="lazy">
                         {% else %}
-                        <div style="width: 44px; height: 44px; background: var(--bg-tertiary); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
-                            <span class="text-muted text-xs">—</span>
-                        </div>
+                        <span class="thumb thumb-empty" aria-hidden="true"><i class="bi bi-image"></i></span>
                         {% endif %}
                     </td>
                     <td>
@@ -210,9 +203,9 @@
                     </td>
                     <td><code class="text-xs">{{ product.base_sku }}</code></td>
                     <td class="text-center">
-                        <span class="badge {% if product.total_quantity < 5 %}bg-danger{% else %}bg-secondary{% endif %}">
-                            {{ product.total_quantity }}
-                        </span>
+                        {% if product.total_quantity == 0 %}<span class="badge bg-danger">Sold out</span>
+                        {% elif product.total_quantity < 5 %}<span class="badge bg-warning">{{ product.total_quantity }}</span>
+                        {% else %}<span class="qty">{{ product.total_quantity }}</span>{% endif %}
                     </td>
                     <td class="text-center">
                         <span class="text-sm">{{ product.variants.count }}</span>
@@ -240,7 +233,6 @@
                 <tr>
                     <td colspan="7">
                         <div class="empty-state">
-                            <p class="empty-state-icon">📦</p>
                             <p class="empty-state-title">No products found</p>
                             <p class="empty-state-text">
                                 {% if request.GET.q or active_filters %}
@@ -265,7 +257,7 @@
         {% if page_obj.has_previous %}
         <li class="page-item">
             <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.brand %}&brand={{ request.GET.brand }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.season %}&season={{ request.GET.season }}{% endif %}{% if request.GET.material %}&material={{ request.GET.material }}{% endif %}">
-                ← Prev
+                Previous
             </a>
         </li>
         {% endif %}

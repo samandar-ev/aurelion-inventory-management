@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load number_filters %}
 {% load tz %}
 
 {% block title %}Client Detail - AURELION{% endblock %}
@@ -6,11 +7,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">{{ client.first_name }} {{ client.last_name }}</h2>
-        <p class="text-muted small mb-0">Tier: <span class="badge bg-light text-dark border">{{
-                client.dynamic_tier_label }}</span></p>
+        <h1 class="h2 mb-1">{{ client.first_name }} {{ client.last_name }}</h1>
+        <p class="text-muted small mb-0">{{ client.dynamic_tier_label }} client</p>
     </div>
-    <a href="{% url 'client_list' %}" class="btn btn-view">&larr; Back</a>
+    <a href="{% url 'client_list' %}" class="btn btn-view"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</a>
 </div>
 
 <div class="card">
@@ -22,7 +22,7 @@
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">Email</div>
-                <div>{{ client.email|default:"-" }}</div>
+                <div>{% if client.email %}{{ client.email }}{% else %}<span class="text-muted">None</span>{% endif %}</div>
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">Visits / Orders</div>
@@ -33,7 +33,7 @@
 </div>
 
 <div class="card mt-4">
-    <div class="card-header">Purchase History</div>
+    <div class="card-header">Purchase history</div>
     <div class="table-responsive">
         <table class="table mb-0">
             <thead>
@@ -49,7 +49,7 @@
                 {% for order in client.order_set.all %}
                 <tr>
                     <td>#{{ order.order_code|default:order.id }}</td>
-                    <td>{{ order.created_at|localtime|date:"Y-m-d H:i" }}</td>
+                    <td class="text-nowrap">{{ order.created_at|localtime|date:"M j" }}<span class="text-muted ms-2">{{ order.created_at|localtime|time:"H:i" }}</span></td>
                     <td>
                         <small class="text-muted">
                             {% for item in order.items.all %}
@@ -68,7 +68,7 @@
                         <span class="badge bg-light text-dark border">{{ order.get_status_display }}</span>
                         {% endif %}
                     </td>
-                    <td>${{ order.total_amount }}</td>
+                    <td>{{ order.total_amount|format_currency }}</td>
                 </tr>
                 {% empty %}
                 <tr>

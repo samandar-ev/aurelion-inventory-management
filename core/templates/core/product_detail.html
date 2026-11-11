@@ -1,105 +1,95 @@
 {% extends 'core/base.html' %}
+{% load number_filters %}
 
-{% block title %}{{ product.name }} - AURELION{% endblock %}
+{% block title %}{{ product.name }} - Aurelion{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <a href="{% url 'product_list' %}" class="text-decoration-none text-muted small">&larr; Back to Products</a>
+<div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-3">
+    <div>
+        <a href="{% url 'product_list' %}" class="btn btn-sm btn-ghost mb-2 ps-0"><i class="bi bi-arrow-left" aria-hidden="true"></i>Inventory</a>
+        <p class="text-muted mb-1">{{ product.brand }}</p>
+        <h1>{{ product.name }}</h1>
+    </div>
+    {% if user.is_owner %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'product_delete' product.pk %}" class="btn btn-delete">Delete</a>
+        <a href="{% url 'product_edit' product.pk %}" class="btn btn-primary">Edit product</a>
+    </div>
+    {% endif %}
 </div>
 
-<div class="row g-4">
-    
-    <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
+<div class="row g-3">
+    <div class="col-lg-4">
+        <section class="card">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.brand }} {{ product.name }}" class="product-photo">
+            {% else %}
+            <div class="product-photo product-photo-empty" aria-hidden="true"><i class="bi bi-image"></i></div>
+            {% endif %}
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5 class="text-muted text-uppercase small mb-1">{{ product.brand }}</h5>
-                        <h2 class="mb-0">
-                            {{ product.name }}
-                            {% if product.is_luxury_product %}
-                            <span class="badge bg-warning text-dark fs-6 align-middle"><i class="bi bi-gem"></i>
-                                Luxury</span>
-                            {% endif %}
-                        </h2>
-                    </div>
-                    {% if user.is_owner %}
-                    <div class="btn-group">
-                        <a href="{% url 'product_edit' product.pk %}" class="btn btn-sm btn-edit">Edit</a>
-                        <a href="{% url 'product_delete' product.pk %}" class="btn btn-sm btn-delete">Delete</a>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <span class="text-muted small d-block">Base SKU</span>
-                    <span class="font-monospace">{{ product.base_sku }}</span>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted small d-block">Category</span>
-                    <span>{{ product.category }}</span>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted small d-block">Collection</span>
-                    <span>{{ product.collection|default:"-" }}</span>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted small d-block">Season</span>
-                    <span>{{ product.season|default:"-" }}</span>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted small d-block">Material</span>
-                    <span>{{ product.material|default:"-" }}</span>
-                </div>
-
+                <dl class="detail-list">
+                    <div><dt>Base SKU</dt><dd><code>{{ product.base_sku }}</code></dd></div>
+                    <div><dt>Category</dt><dd>{{ product.category }}</dd></div>
+                    <div><dt>Collection</dt><dd>{{ product.collection|default:"None" }}</dd></div>
+                    <div><dt>Season</dt><dd>{{ product.season|default:"None" }}</dd></div>
+                    <div><dt>Material</dt><dd>{{ product.material|default:"None" }}</dd></div>
+                    <div><dt>Condition</dt><dd>{{ product.condition }}</dd></div>
+                    {% if product.country_of_origin %}<div><dt>Made in</dt><dd>{{ product.country_of_origin }}</dd></div>{% endif %}
+                    <div><dt>Included</dt><dd>
+                        {% if product.has_box %}Box{% endif %}{% if product.has_dust_bag %}{% if product.has_box %}, {% endif %}dust bag{% endif %}{% if product.has_warranty_card %}{% if product.has_box or product.has_dust_bag %}, {% endif %}warranty card{% endif %}{% if not product.has_box and not product.has_dust_bag and not product.has_warranty_card %}None{% endif %}
+                    </dd></div>
+                </dl>
                 {% if product.description %}
-                <div class="mt-4">
-                    <h6 class="text-muted small text-uppercase">Description</h6>
-                    <p class="small text-muted mb-0">{{ product.description }}</p>
-                </div>
+                <p class="text-muted text-sm mt-3 mb-0">{{ product.description }}</p>
                 {% endif %}
             </div>
-        </div>
+        </section>
     </div>
 
-    
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center bg-white">
-                <h5 class="mb-0">Variants & Stock</h5>
-                {% if user.is_manager %}
-                <button class="btn btn-sm btn-primary">+ Add Variant</button>
-                {% endif %}
+    <div class="col-lg-8">
+        <section class="card">
+            <div class="card-header">
+                <h2 class="section-title">Variants and stock</h2>
+                <span class="text-xs text-muted fw-normal">{{ product.variants.count }} variant{{ product.variants.count|pluralize }}</span>
             </div>
             <div class="table-responsive">
-                <table class="table align-middle mb-0">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>SKU</th>
-                            <th>Color</th>
-                            <th>Size</th>
-                            <th>Retail Price</th>
-                            <th>Current Qty</th>
+                            <th>Variant</th>
+                            <th class="d-none d-md-table-cell">Serial</th>
+                            <th class="text-end">Retail price</th>
+                            <th class="text-end">In stock</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for variant in product.variants.all %}
                         <tr>
-                            <td class="font-monospace small">{{ variant.sku }}</td>
-                            <td>{{ variant.color }}</td>
-                            <td>{{ variant.size }}</td>
-                            <td>${{ variant.retail_price }}</td>
-                            <td>{{ variant.initial_quantity }}</td>
+                            <td><code>{{ variant.sku }}</code></td>
+                            <td>{{ variant.color|default:"—" }}, {{ variant.size|default:"—" }}</td>
+                            <td class="d-none d-md-table-cell">{% if variant.serial_number %}<code>{{ variant.serial_number }}</code>{% else %}<span class="text-muted">None</span>{% endif %}</td>
+                            <td class="text-end">{{ variant.retail_price|format_currency }}</td>
+                            <td class="text-end">
+                                {% if variant.initial_quantity == 0 %}<span class="badge bg-danger">Sold out</span>
+                                {% elif variant.initial_quantity < 5 %}<span class="badge bg-warning">{{ variant.initial_quantity }}</span>
+                                {% else %}<span class="qty">{{ variant.initial_quantity }}</span>{% endif %}
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">No variants added yet.</td>
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <p class="empty-state-title">No variants yet</p>
+                                    <p class="empty-state-text">Edit the product to add sizes and colours with their prices and stock.</p>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 {% endblock %}

@@ -1,434 +1,356 @@
 <div align="center">
 
-# A U R E L I O N
+# Aurelion
 
-### Retail Management Platform for Luxury Boutiques
+**Retail management for luxury boutiques**
 
-Inventory · Point of Sale · Returns & Exchanges · Clienteling · Promotions · Analytics
+Inventory, point of sale, returns and exchanges, clienteling, promotions and reporting in one Django application.
 
-<br>
-
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-5.2-092E20?style=for-the-badge&logo=django&logoColor=white)
-![DRF](https://img.shields.io/badge/Django_REST-3.14-A30000?style=for-the-badge&logo=django&logoColor=white)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)
-![Chart.js](https://img.shields.io/badge/Chart.js-4-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
-![License](https://img.shields.io/badge/License-Proprietary-B08D57?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10%2B-1f4d3e?style=flat-square&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-5.2-1f4d3e?style=flat-square&logo=django&logoColor=white)
+![Django REST Framework](https://img.shields.io/badge/DRF-3.14-1f4d3e?style=flat-square&logo=django&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-1f4d3e?style=flat-square&logo=bootstrap&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-17%20passing-1f4d3e?style=flat-square)
+![License](https://img.shields.io/badge/license-proprietary-4a4843?style=flat-square)
 
 <br>
 
-<img src="docs/screenshots/login.png" alt="AURELION login screen" width="100%">
+<img src="docs/mockups/hero.png" alt="Aurelion dashboard in a browser, with the point of sale on a tablet and stock lookup on a phone" width="100%">
 
 </div>
 
-<br>
+> [!NOTE]
+> **Showcase edition.** Aurelion was built for a single-location luxury boutique. The client's name and
+> branding have been changed for confidentiality, and this repository is a reduced version published for
+> demonstration. The production system differs from what is shown here.
 
-> [!IMPORTANT]
-> **Showcase edition.** AURELION was built for a real luxury retail business operating a single-chain
-> boutique. For confidentiality, the client's name, branding, and identifying details have been changed.
-> This repository is **not the complete codebase**: it is a reduced version published for demonstration
-> purposes only. The production system delivered to the client differs from what is shown here.
+## Contents
 
----
+- [Overview](#overview)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Roles and permissions](#roles-and-permissions)
+- [REST API](#rest-api)
+- [Security](#security)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [License](#license)
 
-## 📑 Table of Contents
+## Overview
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Screenshots](#-screenshots)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Getting Started](#-getting-started)
-- [Roles & Permissions](#-roles--permissions)
-- [REST API](#-rest-api)
-- [Project Structure](#-project-structure)
-- [License](#-license)
-- [Disclaimer](#%EF%B8%8F-disclaimer)
+Luxury retail has different needs from ordinary retail. A single handbag can be worth more than a month of
+stock in a regular shop, each piece may carry a serial number and authenticity papers, and the relationship
+with the client matters as much as the sale.
 
----
+Aurelion covers the whole boutique workflow: cataloguing high-value pieces with provenance, selling at the
+counter, handling returns and exchanges, rewarding loyal clients, and giving the owner a live view of revenue,
+margin and stock. It is designed to work equally well on a touch tablet at the till and on a desktop in the
+back office.
 
-## ✨ Overview
+## Features
 
-Luxury retail has different needs from ordinary retail. A single handbag can cost more than a month of
-stock in a regular shop, every piece may carry a serial number and an authenticity card, and the
-relationship with each client matters as much as the sale.
+**Point of sale**
+- Scan a barcode, or search by SKU, brand or product name and tap a result
+- Attach a client, apply promotion codes, and preview discounts calculated on the server
+- Prices always come from the catalogue; checkout writes the order, stock and promotion usage in one transaction
+- Short order codes (for example `#6HUK3M`) and a printable receipt
 
-**AURELION** puts the whole boutique workflow in one web app: cataloguing high-value items with full
-provenance, ringing up sales at the counter, handling returns and exchanges, rewarding loyal clients,
-and giving the owner a live view of revenue, margin, and stock health.
+**Returns and exchanges**
+- Look up an order by its code and return part or all of it within the 10-day window
+- Refund, or exchange for other pieces in the same flow; stock is restored automatically
+- Every return is linked to its original order, with the reason and the staff member who processed it
 
-| | |
-|---|---|
-| 🏷️ **Catalog with provenance** | Serials, authentication codes, edition numbers, packaging and provenance records |
-| 🛒 **Fast checkout** | Barcode-driven POS with live promotion and loyalty pricing |
-| 🔁 **Returns & exchanges** | Partial or full returns with automatic restocking and an audit trail |
-| 💎 **Clienteling** | Client profiles, purchase history, and Silver, Gold, and Platinum loyalty tiers |
-| 📊 **Owner analytics** | Revenue, cost, gross profit, and margin, exportable to Excel |
-| 🔐 **Role-based access** | Owner, Cashier, and Sales Associate, each with a tailored workspace |
+**Catalogue and inventory**
+- Quick add for everyday items and an eight-section registration form for high-value pieces
+- Variants with colour, size, cost and retail price, serial numbers, authentication codes and edition numbers
+- Packaging and provenance records, product photos, archive instead of delete
+- Low-stock tracking against each variant's own minimum level
+- Code 128 label sheets as print-ready A4 PDFs, and camera barcode lookup on the shop floor
 
----
+**Clients and promotions**
+- Client book with contact details, notes, purchase history and Regular, Silver, Gold and Platinum tiers
+- Percentage, fixed-amount, buy-X-get-Y and tier-based promotions with schedules and usage limits
 
-## 🚀 Key Features
+**Reporting**
+- Today's net sales with a running total by hour, top products by revenue, and stock that needs attention
+- Revenue, cost, gross profit and margin over 7, 30 or 90 days, exportable to Excel
 
-<details open>
-<summary><b>📦 Inventory & Catalog Management</b></summary>
-<br>
+**Workspace**
+- Role-based access for owners, cashiers and sales associates
+- Command palette (`Cmd K` / `Ctrl K`) to jump to any page or search inventory, clients and orders
+- Responsive layout with larger touch targets on tablets and phones
 
-- **Two product-entry modes:** a quick form for everyday items and an eight-section **luxury product registration form** for high-value pieces.
-- **Detailed product records:** brand, collection, season, category, material and composition, condition (new or pre-owned), release year, limited-edition flag, country of origin.
-- **Packaging & provenance tracking:** box, dust bag, warranty card, care card, extras, packaging condition, and free-text provenance notes.
-- **Variants (SKU-level):** color, size, hardware finish, variant material, cost and retail price, multi-currency support, **unique serial numbers**, authentication codes, and edition numbers.
-- **Multi-location stock:** quantity on hand, reserved, and sold per location, with a full **stock movement ledger** (in, out, adjustment, transfer).
-- **Low-stock alerts** driven by per-variant minimum stock levels.
-- **Image pipeline:** uploads are normalized onto square, white-background canvases with Pillow for a consistent catalog look, with support for a multi-image gallery.
-- **Archive instead of delete:** retire products without losing sales history (only the owner can restore them).
+## Screenshots
 
-</details>
+### Point of sale and stock lookup
 
-<details open>
-<summary><b>🏷️ Barcode Generation</b></summary>
-<br>
+<img src="docs/mockups/devices.png" alt="Point of sale on a tablet and stock lookup on a phone" width="100%">
 
-- Select any set of variants and generate a **print-ready A4 PDF of Code 128 labels** (python-barcode + ReportLab).
-- Supports EAN-13, UPC, Code 128, and internal barcode types per variant.
-- The Sales Associate view includes **camera-based barcode scanning** (html5-qrcode) for instant product lookup on the shop floor.
-
-</details>
-
-<details open>
-<summary><b>🛒 Point of Sale</b></summary>
-<br>
-
-- Scan a barcode or type a SKU to add items. Adjust quantities inline.
-- Attach an existing client or create a new one without leaving the screen.
-- **Live discount preview:** promotions, promo codes, and loyalty-tier pricing are calculated server-side before checkout.
-- Atomic checkout (`transaction.atomic`) that writes the order, decrements stock, and records promotion usage in one step.
-- Unique short order codes (e.g. `#6HUK3M`) and a **printable branded receipt**.
-
-</details>
-
-<details open>
-<summary><b>🔁 Returns & Exchanges</b></summary>
-<br>
-
-- Look up any past order by its code and select the items and quantities to return.
-- Reason codes: changed mind, defective, wrong size, wrong item, or other.
-- **Refund** or **exchange** for replacement items in the same flow.
-- Items go back into stock automatically, and the original order moves to *Partially Returned* or *Fully Returned*.
-- Refund and replacement orders are linked to the original for a complete audit trail.
-
-</details>
-
-<details open>
-<summary><b>💎 Clienteling & Loyalty</b></summary>
-<br>
-
-- Client profiles with contact details, birthday, notes, and communication preferences.
-- Full purchase history on every client page.
-- **Loyalty tiers** (Regular, Silver, Gold, Platinum) that update dynamically from lifetime spend.
-
-</details>
-
-<details open>
-<summary><b>🎯 Promotions Engine</b></summary>
-<br>
-
-- Five promotion types: **Percentage off**, **Fixed amount off**, **Buy X Get Y Free**, **Tier-based**, and **Bundle**.
-- Scope promotions to all products, a category, a brand, or hand-picked products.
-- Restrict by customer tier, minimum cart value, or minimum item count.
-- Scheduled start and end dates, global usage caps, per-customer caps, and an on/off toggle.
-
-</details>
-
-<details open>
-<summary><b>📊 Reports & Analytics</b></summary>
-<br>
-
-- KPIs for gross revenue, cost of goods sold, gross profit and margin, average order value, and refunds.
-- Interactive **sales trend** and **orders-per-day** charts (Chart.js).
-- Top products by revenue and by quantity.
-- Selectable reporting periods and a one-click **Excel export** (openpyxl).
-
-</details>
-
-<details open>
-<summary><b>👥 Personnel Management</b></summary>
-<br>
-
-- The owner can create and remove staff accounts and assign roles.
-- Each role is sent to its own dashboard after login.
-
-</details>
-
----
-
-## 📸 Screenshots
-
-### Owner Dashboard
-Today's net sales, top products, low-stock alerts, and searchable recent orders at a glance.
+### Dashboard
 
 <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="100%">
 
 ### Inventory
-Filterable, searchable catalog with stock levels and pricing across all variants.
 
-<img src="docs/screenshots/inventory.png" alt="Inventory list" width="100%">
+<img src="docs/mockups/inventory.png" alt="Inventory with product photos and stock states" width="100%">
 
-### Luxury Product Registration
-A structured, eight-section form that captures everything a high-value piece needs: product identity,
-SKU and codes, luxury attributes, variants with pricing and stock, packaging and accessories,
-compliance and materials, media upload, and tags.
+### Product detail
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/add-product-1.png" alt="Add product step 1"><p align="center"><sub>Part 1 of 4</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/add-product-2.png" alt="Add product step 2"><p align="center"><sub>Part 2 of 4</sub></p></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/add-product-3.png" alt="Add product step 3"><p align="center"><sub>Part 3 of 4</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/add-product-4.png" alt="Add product step 4"><p align="center"><sub>Part 4 of 4</sub></p></td>
-  </tr>
-</table>
+<img src="docs/screenshots/product-detail.png" alt="Product detail with variants, serial numbers and stock" width="100%">
 
-### Point of Sale
-Barcode-driven checkout with client lookup, promo codes, and a live order summary.
+### Point of sale
 
-<img src="docs/screenshots/pos.png" alt="Point of Sale" width="100%">
+<img src="docs/screenshots/pos.png" alt="Point of sale with a client, three items and a promotion applied" width="100%">
 
-### Receipts & Barcode Labels
+### Orders and returns
 
 <table>
   <tr>
-    <td width="60%"><img src="docs/screenshots/receipt.png" alt="Printable receipt"><p align="center"><sub>Branded, printable customer receipt</sub></p></td>
-    <td width="40%"><img src="docs/screenshots/barcodes.png" alt="Barcode label generation"><p align="center"><sub>Bulk Code 128 label generation (PDF)</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/orders.png" alt="Order history"></td>
+    <td width="50%"><img src="docs/screenshots/order-detail.png" alt="Order with a returned item"></td>
   </tr>
 </table>
 
-### Orders
-Complete order history with status tracking for sales, returns, and exchanges.
+### Clients, promotions and reports
 
-<img src="docs/screenshots/orders.png" alt="Orders" width="100%">
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/clients.png" alt="Client book"></td>
+    <td width="50%"><img src="docs/screenshots/promotions.png" alt="Promotions"></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/reports.png" alt="Sales reports"></td>
+  </tr>
+</table>
 
-### Promotions
-Create, schedule, and toggle promotions with usage tracking.
+### Product registration, labels and receipts
 
-<img src="docs/screenshots/promotions.png" alt="Promotions" width="100%">
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/add-product-1.png" alt="Product registration, identity and codes"></td>
+    <td width="50%"><img src="docs/screenshots/add-product-2.png" alt="Product registration, variants and pricing"></td>
+  </tr>
+  <tr>
+    <td width="66%"><img src="docs/screenshots/barcodes.png" alt="Barcode label generation"></td>
+    <td width="34%"><img src="docs/screenshots/receipt.png" alt="Printable receipt"></td>
+  </tr>
+</table>
 
-### Sales Reports
-Revenue, cost, profit, and product performance with Excel export.
+### Sign in
 
-<img src="docs/screenshots/reports.png" alt="Reports" width="100%">
+<img src="docs/mockups/login.png" alt="Sign-in screen" width="100%">
 
----
-
-## 🛠 Tech Stack
+## Tech stack
 
 | Layer | Technology |
-|---|---|
-| **Language** | Python 3.10+ |
-| **Web framework** | Django 5.2 (class-based views, custom user model, formsets) |
-| **API** | Django REST Framework 3.14 |
-| **Database** | SQLite (demo) · PostgreSQL (production) |
-| **Frontend** | Django Templates, Bootstrap 5.3, vanilla JavaScript, custom CSS design system, Inter typeface |
-| **Charts** | Chart.js |
-| **Imaging** | Pillow (image normalization) |
-| **Barcodes & PDF** | python-barcode, ReportLab |
-| **Spreadsheet export** | openpyxl |
-| **Barcode scanning** | html5-qrcode (device camera) |
-| **Static files** | WhiteNoise (compressed, hashed assets) |
-| **App server** | Gunicorn |
-| **Deployment** | AWS with PostgreSQL |
+| --- | --- |
+| Language | Python 3.10+ |
+| Web framework | Django 5.2 (class-based views, custom user model, formsets) |
+| API | Django REST Framework (read-only, session authentication) |
+| Database | SQLite for local use, PostgreSQL in production |
+| Frontend | Django templates, Bootstrap 5.3 grid and components, vanilla JavaScript, Inter |
+| Charts | Chart.js 4 |
+| Images | Pillow (upload validation and normalisation) |
+| Barcodes and PDF | python-barcode, ReportLab |
+| Spreadsheet export | openpyxl |
+| Camera scanning | html5-qrcode |
+| Static files | WhiteNoise |
+| App server | Gunicorn |
 
----
-
-## 🏗 Architecture
+## Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│  BROWSER                                                │
-│  Django templates · Bootstrap · JavaScript              │
+│  Browser                                                │
+│  Django templates, Bootstrap, JavaScript                │
 │  Camera barcode scanner (html5-qrcode)                  │
 └────────────────────────────┬────────────────────────────┘
                              │  HTTPS + CSRF
 ┌────────────────────────────▼────────────────────────────┐
-│  DJANGO APPLICATION                                     │
+│  Django application                                     │
 │                                                         │
-│  Authentication & role-based permissions                │
+│  Authentication and role-based permissions              │
 │                                                         │
 │  ┌───────────────────────────┐  ┌─────────────────────┐ │
-│  │ Views                     │  │ REST API (DRF)      │ │
-│  │ Inventory · POS · Returns │  │ Products · Clients  │ │
-│  │ Clients · Promotions      │  │ Orders              │ │
-│  │ Reports · Personnel       │  │                     │ │
+│  │ Views                     │  │ REST API (read-only)│ │
+│  │ Inventory, POS, returns   │  │ Products, clients,  │ │
+│  │ Clients, promotions       │  │ orders              │ │
+│  │ Reports, personnel        │  │                     │ │
 │  └───────────────────────────┘  └─────────────────────┘ │
 │                                                         │
-│  Services: Pillow · ReportLab · barcode · openpyxl      │
+│  Services: Pillow, ReportLab, python-barcode, openpyxl  │
 └────────────────────────────┬────────────────────────────┘
                              │
          ┌───────────────────┴───────────────────┐
          ▼                                       ▼
 ┌─────────────────────┐               ┌─────────────────────┐
 │ SQLite / PostgreSQL │               │ Media storage       │
-│ (application data)  │               │ (product images)    │
+│ application data    │               │ product images      │
 └─────────────────────┘               └─────────────────────┘
 ```
 
-**Core domain model:** `Product` → `ProductVariant` → `StockLevel` / `Barcode` / `StockMovement` ·
-`Order` → `OrderItem` → `Return` / `ReturnItem` · `Client` → `LoyaltyAccount` · `Promotion` → `PromotionUsage`
+**Domain model:** `Product` → `ProductVariant` → `StockLevel`, `Barcode`, `StockMovement`;
+`Order` → `OrderItem` → `Return`, `ReturnItem`; `Client` → `LoyaltyAccount`; `Promotion` → `PromotionUsage`.
 
----
-
-## ⚙️ Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Python **3.10** or newer
-- `pip` and `venv`
+- Python 3.10 or newer
 
-### 1. Set up the environment
+### 1. Install
 
 ```bash
-cd aurelion-app
+git clone https://github.com/samandar-ev/aurelion-inventory-management.git
+cd aurelion-inventory-management
 
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-
 pip install -r requirements.txt
 ```
 
-### 2. Create the database
+### 2. Create the database and load the demo boutique
 
 ```bash
 python manage.py migrate
+python manage.py seed_demo --reset
 ```
 
-### 3. Create demo accounts
+`seed_demo` creates five staff accounts, a photographed catalogue of 19 pieces (30 variants), 12 clients
+across all loyalty tiers, promotions, seven weeks of sales, today's sales in progress, and a partial return
+and an exchange. Pass `--password` to choose your own password.
 
-The repository ships **without a database or user accounts**. This command creates one account per role
-and a default store location:
+| Role | Username | Name |
+| --- | --- | --- |
+| Owner | `owner` | Isabelle Laurent |
+| Cashier | `cashier` | Marco Bellini |
+| Cashier | `sofia` | Sofia Reyes |
+| Sales associate | `associate` | Amara Okafor |
+| Sales associate | `theo` | Theo Lindqvist |
 
-```bash
-python manage.py create_demo_users
-# optional: python manage.py create_demo_users --password "your-own-password"
-```
-
-| Role | Username | Password |
-|---|---|---|
-| 👑 Owner | `owner` | `aurelion-demo` |
-| 💳 Cashier | `cashier` | `aurelion-demo` |
-| 🧑‍💼 Sales Associate | `associate` | `aurelion-demo` |
+Every account uses the password `aurelion-demo`. To create one account per role without any data, run
+`python manage.py create_demo_users` instead.
 
 > [!WARNING]
-> These credentials are for **local testing only**. Never run the demo accounts in a public deployment.
+> The demo accounts and password are for local use only. Never load them into a public deployment.
 
-### 4. Run the server
+### 3. Run
 
 ```bash
 python manage.py runserver
 ```
 
-Open **http://127.0.0.1:8000** and sign in. A good first walkthrough:
+Open http://127.0.0.1:8000 and sign in. A short walkthrough:
 
-1. Sign in as **owner** and add a product under **Inventory → Add Product**.
-2. Generate its labels under **Barcodes**.
-3. Sign in as **cashier**, scan or type the SKU at **POS**, and complete a sale.
-4. Process a return or exchange from the POS using the order code on the receipt.
-5. Go back to **owner** and review **Reports**, then export to Excel.
+1. As `cashier`, open **Point of sale**, search for "love bracelet", add it, attach a client and apply `SALON10`.
+2. Complete the sale, then start a return from **Return / Exchange** with the order code.
+3. As `associate`, use **Stock lookup** on a phone-sized window and search for "rolex".
+4. As `owner`, review **Reports** and export the period to Excel.
 
-### Environment variables (optional)
+## Configuration
 
 | Variable | Default | Purpose |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | development key | **Required** outside local development |
+| --- | --- | --- |
 | `DJANGO_DEBUG` | `True` | Set to `False` in production |
-| `DJANGO_ALLOWED_HOSTS` | `*` | Comma-separated host list |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | *(empty)* | Comma-separated origins, e.g. `https://example.com` |
+| `DJANGO_SECRET_KEY` | development key | Required when `DJANGO_DEBUG` is `False`; the app refuses to start without it |
+| `DJANGO_ALLOWED_HOSTS` | `*` locally, `localhost` in production | Comma-separated host names |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | empty | Comma-separated origins, for example `https://shop.example.com` |
+| `DJANGO_SECURE_PROXY_SSL_HEADER` | `False` | Set to `True` behind a proxy that sends `X-Forwarded-Proto` |
+| `DJANGO_HSTS_SECONDS` | `31536000` | HSTS max-age in production |
 | `DJANGO_TIME_ZONE` | system time zone | Override the detected time zone |
 
----
+With `DJANGO_DEBUG=False` the session and CSRF cookies are marked secure and HSTS is enabled. Redirecting
+HTTP to HTTPS is left to the load balancer or reverse proxy.
 
-## 🔐 Roles & Permissions
+## Roles and permissions
 
-Roles are **hierarchical**: each role includes everything the role below it can do.
+Roles are hierarchical: each role includes everything the role below it can do. Every rule is enforced on
+the server.
 
-| Capability | Sales Associate | Cashier | Owner |
-|---|:---:|:---:|:---:|
-| Browse inventory & product details | ✅ | ✅ | ✅ |
-| Camera barcode lookup | ✅ | ✅ | ✅ |
-| View clients | ✅ | ✅ | ✅ |
-| Point of sale, returns & exchanges | | ✅ | ✅ |
-| Create and edit products and clients | | ✅ | ✅ |
-| Generate barcode labels | | ✅ | ✅ |
-| View orders | | ✅ | ✅ |
-| Archive products | | ✅ | ✅ |
-| Delete or restore products | | | ✅ |
-| Promotions | | | ✅ |
-| Reports & Excel export | | | ✅ |
-| Personnel management | | | ✅ |
+| Capability | Sales associate | Cashier | Owner |
+| --- | :---: | :---: | :---: |
+| Browse inventory, product details and stock lookup | Yes | Yes | Yes |
+| View clients | Yes | Yes | Yes |
+| Point of sale, returns and exchanges | | Yes | Yes |
+| Create and edit products and clients | | Yes | Yes |
+| Generate barcode labels | | Yes | Yes |
+| View orders and the sales dashboard | | Yes | Yes |
+| Archive products | | Yes | Yes |
+| Delete or restore products | | | Yes |
+| Promotions | | | Yes |
+| Reports and Excel export | | | Yes |
+| Staff accounts | | | Yes |
 
----
+## REST API
 
-## 🔌 REST API
-
-Session-authenticated JSON endpoints, browsable through DRF's web UI at `/api/`.
+Read-only JSON endpoints with session authentication, browsable at `/api/`. All writes go through the web
+application, which enforces pricing, stock and role rules.
 
 | Endpoint | Methods | Access |
-|---|---|---|
-| `/api/products/` | `GET` `POST` `PUT` `PATCH` `DELETE` | Any authenticated user |
-| `/api/clients/` | `GET` `POST` `PUT` `PATCH` `DELETE` | Sales Associate and above |
-| `/api/orders/` | `GET` `POST` `PUT` `PATCH` `DELETE` | Cashier and above |
-| `/health/` | `GET` | Public (database health check) |
+| --- | --- | --- |
+| `/api/products/` | `GET` | Sales associate and above |
+| `/api/clients/` | `GET` | Sales associate and above |
+| `/api/orders/` | `GET` | Cashier and above |
+| `/health/` | `GET` | Public database health check |
 
----
+## Security
 
-## 📁 Project Structure
+- Sale, discount and exchange prices are taken from the catalogue on the server, never from the browser
+- Stock rows are locked during checkout, and the return window is checked again when a return is processed
+- Role checks on every view and API endpoint, with CSRF protection on all state-changing requests
+- Staff-entered text is escaped before it reaches the page or a receipt; order data is passed with `json_script`
+- Uploads must be real images under 10 MB; spreadsheet exports escape cells that could run as formulas
+- Staff passwords go through Django's password validators
+- Production refuses to start without a secret key and uses secure cookies, HSTS and strict security headers
 
+## Testing
+
+```bash
+python manage.py test core
 ```
-aurelion-app/
-├── aurelion/                  # Project configuration
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py / asgi.py
-├── core/                      # Main application
-│   ├── management/commands/   # create_demo_users
+
+The suite covers role boundaries, server-side pricing, the return window, stored XSS, upload validation,
+spreadsheet escaping, password rules, the associate lookup, and a smoke test that renders every page for every
+role.
+
+## Project structure
+
+```text
+aurelion-inventory-management/
+├── aurelion/                    Project settings, URLs, WSGI and ASGI
+├── core/
+│   ├── demo/products/           Demo product photos used by seed_demo
+│   ├── management/commands/     seed_demo, create_demo_users
 │   ├── migrations/
-│   ├── static/core/css/       # AURELION design system
-│   ├── templates/core/        # Server-rendered UI
-│   ├── templatetags/          # Number formatting filters
-│   ├── models.py              # Domain model
-│   ├── views.py               # Inventory, POS, returns, reports, ...
-│   ├── forms.py               # Product forms & variant formsets
-│   ├── permissions.py         # Role mixins & DRF permissions
-│   ├── api.py / api_urls.py   # REST API
-│   └── serializers.py
-├── docs/screenshots/          # README images
+│   ├── static/core/css/         Application stylesheet
+│   ├── templates/core/          Server-rendered pages
+│   ├── templatetags/            Number and currency filters
+│   ├── api.py, api_urls.py      Read-only REST API
+│   ├── forms.py                 Product forms and variant formsets
+│   ├── models.py                Domain model
+│   ├── permissions.py           Role mixins and API permissions
+│   ├── serializers.py
+│   ├── tests.py
+│   └── views.py                 Inventory, POS, returns, reports and staff
+├── docs/
+│   ├── mockups/                 README device mockups
+│   └── screenshots/             README screenshots
 ├── manage.py
-├── requirements.txt
-└── LICENSE
+└── requirements.txt
 ```
 
----
+## License
 
-## 📄 License
+Copyright © 2025–2026 Samandar Erkinov. All rights reserved.
 
-**Copyright © 2025–2026 Samandar Erkinov. All rights reserved.**
+This is proprietary software published for portfolio viewing only. You may not copy, modify, distribute or
+use any part of this code without prior written permission. See [`LICENSE`](LICENSE) for the full terms.
 
-This is **proprietary software** published for portfolio viewing only. You may not copy, modify,
-distribute, or use any part of this code without prior written permission.
-See [`LICENSE`](LICENSE) for the full terms.
-
----
-
-## ⚠️ Disclaimer
-
-**AURELION** is a fictional retail management platform created for portfolio demonstration. Product names,
-trademarks, and brand references are used solely to demonstrate catalog and inventory functionality.
-AURELION is not affiliated with or endorsed by the referenced brands.
-
-This repository is a **demonstration build**. It is not the complete source code, and the production
-system delivered to the client differs from it. The client's identity has been withheld for confidentiality.
-
-<div align="center">
-<br>
-<sub>Designed & developed by <b>Samandar Erkinov</b></sub>
-</div>
+**Disclaimer.** Aurelion is a fictional retail platform built for portfolio demonstration. Brand names appear
+only to demonstrate catalogue and inventory features; Aurelion is not affiliated with or endorsed by those
+brands. Demo product photos are stand-ins from Pexels used under the Pexels License (sources in
+[`core/demo/products/CREDITS.md`](core/demo/products/CREDITS.md)).

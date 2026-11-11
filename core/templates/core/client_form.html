@@ -6,8 +6,8 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="d-flex align-items-center mb-4">
-            <a href="{% url 'client_list' %}" class="text-decoration-none text-muted me-3">&larr; Back</a>
-            <h2 class="mb-0">New Client</h2>
+            <a href="{% url 'client_list' %}" class="text-decoration-none text-muted me-3"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</a>
+            <h1 class="h2 mb-0">New client</h1>
         </div>
 
         <div class="card">
@@ -23,14 +23,14 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">First name</label>
                             <input type="text" name="{{ form.first_name.name }}" class="form-control"
                                 id="{{ form.first_name.id_for_label }}" value="{{ form.first_name.value|default:'' }}"
                                 required>
                             {{ form.first_name.errors }}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Last name</label>
                             <input type="text" name="{{ form.last_name.name }}" class="form-control"
                                 id="{{ form.last_name.id_for_label }}" value="{{ form.last_name.value|default:'' }}">
                             {{ form.last_name.errors }}
@@ -73,7 +73,7 @@
 
                     <div class="d-flex justify-content-end mt-4 pt-3 border-top">
                         <a href="{% url 'client_list' %}" class="btn btn-outline-secondary me-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Register Client</button>
+                        <button type="submit" class="btn btn-primary">Register client</button>
                     </div>
                 </form>
             </div>
